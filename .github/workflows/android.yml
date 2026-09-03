@@ -29,7 +29,15 @@ jobs:
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Validate and build development APK
-        run: ./gradlew --no-daemon --stacktrace clean lintDebug testDebugUnitTest assembleDebug
+        shell: bash
+        run: |
+          set +e
+          ./gradlew --no-daemon --stacktrace --continue clean lintDebug testDebugUnitTest assembleDebug
+          result=$?
+          if [ -f app/build/reports/lint-results-debug.txt ]; then
+            cat app/build/reports/lint-results-debug.txt
+          fi
+          exit "$result"
       - name: Name APK and record checksum
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk MailXperts-v1.4.1-debug.apk
