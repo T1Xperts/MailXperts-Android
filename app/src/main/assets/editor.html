@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<style>
+  :root{color-scheme:dark;--bg:#05090b;--panel:#10181c;--panel2:#162227;--text:#f4ffff;--muted:#a8b6ba;--teal:#00e6d2;--line:#31535a}
+  :root.light{color-scheme:light;--bg:#fafcfd;--panel:#edf7f7;--panel2:#e4f1f2;--text:#062a31;--muted:#527078;--teal:#008f87;--line:#b7d6d8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif}
+  #modes{display:grid;grid-template-columns:1fr 1fr;margin:0 0 7px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  #modes button{border:0;border-radius:0;background:var(--panel);color:var(--muted)}
+  #modes button.active{background:var(--panel2);color:var(--teal);box-shadow:inset 0 -2px var(--teal)}
+  #toolbar{position:sticky;top:0;display:flex;overflow-x:auto;gap:6px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:11px 11px 0 0;z-index:2;scrollbar-width:none}
+  #toolbar::-webkit-scrollbar{display:none}
+  button,select{flex:0 0 auto;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;min-height:38px}
+  button.primary{border-color:var(--teal);color:var(--teal)}
+  select{max-width:155px}
+  #editor{min-height:360px;padding:15px;outline:none;line-height:1.55;background:var(--bg);border:1px solid var(--line);border-top:0;border-radius:0 0 11px 11px;overflow-wrap:anywhere}
+  #source{display:none;width:100%;min-height:360px;background:var(--bg);color:var(--text);padding:13px;border:1px solid var(--line);border-top:0;border-radius:0 0 11px 11px;outline:none;font-family:monospace;font-size:14px}
+  .picker{display:none;gap:6px;flex-wrap:wrap;padding:9px;background:var(--panel);border:1px solid var(--line);border-top:0}
+  .picker.open{display:flex}.picker button{font-size:20px;min-width:42px;padding:6px}
+  a{color:var(--teal)} blockquote{border-left:3px solid var(--teal);margin-left:4px;padding-left:12px;color:var(--muted)} img{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div id="modes"><button id="richTab" class="active" onclick="showRich()">Rich Text</button><button id="sourceTab" onclick="showSource()">HTML Source</button></div>
+<div id="toolbar">
+  <button onclick="cmd('undo')">↶</button><button onclick="cmd('redo')">↷</button>
+  <button onclick="cmd('bold')"><b>B</b></button><button onclick="cmd('italic')"><i>I</i></button><button onclick="cmd('underline')"><u>U</u></button>
+  <select id="font" onchange="applyFont(this.value)"><option value="">Device font</option><option value="generic:sans-serif">Sans Serif</option><option value="generic:serif">Serif</option><option value="generic:monospace">Monospace</option><option value="generic:cursive">Cursive</option></select>
+  <select onchange="fontSize(this.value);this.selectedIndex=0"><option value="">Size</option><option value="2">Small</option><option value="3">Normal</option><option value="4">Large</option><option value="5">Larger</option><option value="6">Heading</option></select>
+  <select onchange="block(this.value);this.selectedIndex=0"><option value="">Style</option><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="blockquote">Quote</option></select>
+  <button onclick="cmd('insertUnorderedList')">• List</button><button onclick="cmd('insertOrderedList')">1. List</button>
+  <button onclick="togglePicker('emojiPicker')">😀 Emoji</button><button onclick="togglePicker('symbolPicker')">Ω Symbols</button>
+  <button onclick="link()">Link</button><button onclick="cmd('removeFormat')">Clear</button>
+</div>
+<div id="emojiPicker" class="picker" aria-label="Emoji picker">
+  <button onclick="insertText('😀')">😀</button><button onclick="insertText('😊')">😊</button><button onclick="insertText('😂')">😂</button>
+  <button onclick="insertText('😍')">😍</button><button onclick="insertText('👍')">👍</button><button onclick="insertText('🙏')">🙏</button>
+  <button onclick="insertText('👏')">👏</button><button onclick="insertText('🎉')">🎉</button><button onclick="insertText('✅')">✅</button>
+  <button onclick="insertText('❤️')">❤️</button><button onclick="insertText('📌')">📌</button><button onclick="insertText('📅')">📅</button>
+  <button onclick="insertText('💡')">💡</button><button onclick="insertText('⚠️')">⚠️</button><button onclick="insertText('✉️')">✉️</button>
+</div>
+<div id="symbolPicker" class="picker" aria-label="Symbol picker">
+  <button onclick="insertText('©')">©</button><button onclick="insertText('®')">®</button><button onclick="insertText('™')">™</button>
+  <button onclick="insertText('€')">€</button><button onclick="insertText('£')">£</button><button onclick="insertText('¥')">¥</button>
+  <button onclick="insertText('✓')">✓</button><button onclick="insertText('•')">•</button><button onclick="insertText('→')">→</button>
+  <button onclick="insertText('°')">°</button><button onclick="insertText('±')">±</button><button onclick="insertText('…')">…</button>
+</div>
+<div id="editor" contenteditable="true" spellcheck="true"><p><br></p></div>
+<textarea id="source" spellcheck="false"></textarea>
+<style id="deviceFonts"></style>
+<script>
+let sourceMode=false,loadedFonts={};
+function cmd(name,value=null){if(sourceMode)return;document.execCommand(name,false,value);document.getElementById('editor').focus()}
+function insertText(value){if(sourceMode)return;document.getElementById('editor').focus();document.execCommand('insertText',false,value)}
+function togglePicker(id){if(sourceMode)return;['emojiPicker','symbolPicker'].forEach(key=>document.getElementById(key).classList.toggle('open',key===id&&!document.getElementById(key).classList.contains('open')))}
+function block(tag){if(tag)cmd('formatBlock',tag)}
+function fontSize(size){if(size)cmd('fontSize',size)}
+function link(){if(sourceMode)return;const u=prompt('Link URL (https://...)');if(u&&/^https?:\/\//i.test(u))cmd('createLink',u)}
+function showSource(){if(sourceMode)return;const e=document.getElementById('editor'),s=document.getElementById('source');s.value=e.innerHTML;e.style.display='none';s.style.display='block';sourceMode=true;document.querySelectorAll('.picker').forEach(p=>p.classList.remove('open'));document.getElementById('richTab').classList.remove('active');document.getElementById('sourceTab').classList.add('active');s.focus()}
+function showRich(){if(!sourceMode)return;const e=document.getElementById('editor'),s=document.getElementById('source');e.innerHTML=s.value;s.style.display='none';e.style.display='block';sourceMode=false;document.getElementById('sourceTab').classList.remove('active');document.getElementById('richTab').classList.add('active');e.focus()}
+function applyFont(key){if(!key||sourceMode)return;if(key.startsWith('generic:')){cmd('fontName',key.substring(8));return}try{if(!loadedFonts[key]&&window.MailXpertsFonts){const data=MailXpertsFonts.fontData(key);if(data){const family='MX_'+key.replace(/[^a-z0-9_]/gi,'_');document.getElementById('deviceFonts').textContent+=`@font-face{font-family:'${family}';src:url('${data}') format('truetype');}`;loadedFonts[key]=family}}if(loadedFonts[key])cmd('fontName',loadedFonts[key])}catch(e){}}
+function setDeviceFonts(items){const select=document.getElementById('font');(items||[]).forEach(item=>{const option=document.createElement('option');option.value=item.key;option.textContent=item.name;select.appendChild(option)})}
+function setTheme(dark){document.documentElement.classList.toggle('light',!dark)}
+window.MailXpertsEditor={
+  getHtml:function(){return sourceMode?document.getElementById('source').value:document.getElementById('editor').innerHTML},
+  setHtml:function(value){document.getElementById('editor').innerHTML=value||'<p><br></p>';document.getElementById('source').value=value||''},
+  setTheme:setTheme,
+  setDeviceFonts:setDeviceFonts
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mx_black">#070B0D</color>
+    <color name="mx_black_true">#000000</color>
+    <color name="mx_panel">#10181C</color>
+    <color name="mx_panel_soft">#162227</color>
+    <color name="mx_teal">#00E6D2</color>
+    <color name="mx_teal_dark">#009E91</color>
+    <color name="mx_text">#F4FFFF</color>
+    <color name="mx_muted">#A8B6BA</color>
+    <color name="mx_white">#FAFCFD</color>
+    <color name="mx_light_panel">#EDF7F7</color>
+    <color name="mx_light_text">#062A31</color>
+    <color name="mx_light_muted">#527078</color>
+    <color name="mx_error">#FF6B6B</color>
+</resources>

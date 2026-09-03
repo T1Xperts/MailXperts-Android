@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="au.com.t1xperts.mailxperts">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:icon="@drawable/mailxperts_icon"
+        android:roundIcon="@drawable/mailxperts_icon"
+        android:label="MailXperts"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme.Dark"
+        android:usesCleartextTraffic="false">
+        <activity android:name=".AppearanceActivity" android:exported="false" />
+        <activity android:name=".SearchActivity" android:exported="false" />
+        <activity android:name=".LocalFolderActivity" android:exported="false" />
+        <activity android:name=".ComposeActivity" android:exported="false" />
+        <activity android:name=".MessageActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".InboxActivity" android:exported="false" />
+        <activity android:name=".MailboxActivity" android:exported="false" />
+        <activity android:name=".AccountsActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <receiver android:name=".ScheduledEmailReceiver" android:exported="false" />
+        <receiver android:name=".MailSyncReceiver" android:exported="false" />
+        <receiver android:name=".RescheduleReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".SplashActivity" android:exported="true" android:theme="@style/AppTheme.Dark">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+    </application>
+</manifest>
