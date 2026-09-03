@@ -16,7 +16,6 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@color/mx_white</item>
         <item name="android:navigationBarColor">@color/mx_white</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowBackground">@color/mx_white</item>
         <item name="android:colorAccent">@color/mx_teal_dark</item>
     </style>

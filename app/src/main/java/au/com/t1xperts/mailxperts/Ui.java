@@ -1,5 +1,6 @@
 package au.com.t1xperts.mailxperts;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
@@ -41,6 +42,7 @@ final class Ui {
         if (Build.VERSION.SDK_INT >= 30) content.requestApplyInsets();
     }
 
+    @TargetApi(Build.VERSION_CODES.R)
     private static final class SafeAreaInsetsListener implements View.OnApplyWindowInsetsListener {
         private final int baseLeft;
         private final int baseTop;

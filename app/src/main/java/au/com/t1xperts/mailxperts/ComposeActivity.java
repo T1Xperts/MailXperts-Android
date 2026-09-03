@@ -1,6 +1,5 @@
 package au.com.t1xperts.mailxperts;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -25,6 +24,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,7 +44,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ComposeActivity extends Activity {
+public class ComposeActivity extends ComponentActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ArrayList<AccountConfig> accounts = new ArrayList<>();
     private AccountConfig account;
@@ -137,6 +139,9 @@ public class ComposeActivity extends Activity {
         actions.addView(schedule, scheduleParams);
         root.addView(actions);
         Ui.setContentView(this, root);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { confirmClose(); }
+        });
         populate();
     }
 
@@ -344,8 +349,6 @@ public class ComposeActivity extends Activity {
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
         date.show();
     }
-
-    @Override public void onBackPressed() { confirmClose(); }
 
     private void confirmClose() {
         new AlertDialog.Builder(this)

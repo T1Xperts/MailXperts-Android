@@ -7,10 +7,9 @@
         <item name="android:statusBarColor">@color/mx_black</item>
         <item name="android:navigationBarColor">@color/mx_black</item>
         <item name="android:windowBackground">@color/mx_black</item>
-        <item name="android:windowSplashScreenBackground">@color/mx_black</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/mailxperts_icon</item>
         <item name="android:colorAccent">@color/mx_teal</item>
     </style>
+
     <style name="AppTheme.Light" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
@@ -19,8 +18,6 @@
         <item name="android:navigationBarColor">@color/mx_white</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowBackground">@color/mx_white</item>
-        <item name="android:windowSplashScreenBackground">@color/mx_white</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/mailxperts_icon</item>
         <item name="android:colorAccent">@color/mx_teal_dark</item>
     </style>
 </resources>
