@@ -13,7 +13,7 @@ public class EditorAssetContractTest {
     @Test public void editorSupportsBoundedNativeAndLinkedImages() throws Exception {
         Path path = Paths.get("src/main/assets/editor.html");
         if (!Files.exists(path)) path = Paths.get("app/src/main/assets/editor.html");
-        String editor = Files.readString(path, StandardCharsets.UTF_8);
+        String editor = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
 
         assertTrue(editor.contains("MailXpertsImages.chooseImage()"));
         assertTrue(editor.contains("Image URL"));

@@ -29,6 +29,6 @@ public class ManifestContractTest {
     private static String readProjectFile(String modulePath, String rootPath) throws Exception {
         Path path = Paths.get(modulePath);
         if (!Files.exists(path)) path = Paths.get(rootPath);
-        return Files.readString(path, StandardCharsets.UTF_8);
+        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
     }
 }
