@@ -35,6 +35,7 @@ public class MessageActivity extends Activity {
     private ProgressBar progress;
     private Button reply;
     private Button spam;
+    private Button delete;
     private Button externalReport;
     private Button reminder;
     private MailRepository.FullMessage loaded;
@@ -79,6 +80,12 @@ public class MessageActivity extends Activity {
         actions.addView(back, backParams);
         root.addView(actions);
 
+        delete = Ui.secondaryButton(this,
+                account.deleteFromServer ? "Delete — move to server Trash" : "Delete on this device",
+                v -> confirmDelete());
+        delete.setEnabled(false);
+        root.addView(delete);
+
         LinearLayout smartActions = new LinearLayout(this);
         smartActions.setOrientation(LinearLayout.HORIZONTAL);
         externalReport = Ui.secondaryButton(this, "External abuse report…", v -> reportOptions());
@@ -116,7 +123,8 @@ public class MessageActivity extends Activity {
     private void load() {
         executor.execute(() -> {
             try {
-                MailRepository.FullMessage message = MailRepository.fetchMessage(account, kind, uid);
+                MailRepository.FullMessage message = MailRepository.fetchMessage(
+                        account, kind, uid, account.syncReadState);
                 markCachedSeen();
                 MailIntelligence.Result result = MailIntelligence.analyse(
                         message.from, message.subject, message.html, message.date);
@@ -130,6 +138,7 @@ public class MessageActivity extends Activity {
                     reply.setEnabled(true);
                     spam.setEnabled(!MailRepository.SENT.equals(kind));
                     externalReport.setEnabled(!MailRepository.SENT.equals(kind));
+                    delete.setEnabled(true);
                     showIntelligence(result);
                     body.loadDataWithBaseURL("https://mailxperts.local/", wrap(message.html),
                             "text/html", "UTF-8", null);
@@ -195,6 +204,50 @@ public class MessageActivity extends Activity {
                     progress.setVisibility(View.GONE);
                     spam.setEnabled(true);
                     Toast.makeText(this, "Spam action failed: " + MailRepository.safe(error), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void confirmDelete() {
+        boolean onServer = account.deleteFromServer;
+        new AlertDialog.Builder(this)
+                .setTitle(onServer ? "Move to server Trash?" : "Hide on this device?")
+                .setMessage(onServer
+                        ? "This message will be removed from this folder on the mail server and moved to its Trash folder when supported."
+                        : "This message will disappear from MailXperts on this device, but it will remain unchanged on the mail server. You can change this policy in Account Settings.")
+                .setPositiveButton("Delete", (dialog, which) -> deleteMessage(onServer))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteMessage(boolean onServer) {
+        delete.setEnabled(false);
+        if (!onServer) {
+            LocalStore cache = new LocalStore(this);
+            try { cache.hideCached(accountId, kind, uid); }
+            finally { cache.close(); }
+            Toast.makeText(this, "Hidden on this device — server copy retained",
+                    Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try {
+                MailRepository.deleteMessage(account, kind, uid);
+                removeCachedSummary();
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Moved to server Trash", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    delete.setEnabled(true);
+                    Toast.makeText(this, "Delete failed: " + MailRepository.safe(error),
+                            Toast.LENGTH_LONG).show();
                 });
             }
         });

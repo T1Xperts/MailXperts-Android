@@ -1,4 +1,22 @@
-# MailXperts 1.4.1
+# MailXperts 1.5.0
+
+## Instant cache-first mail
+
+- Paints up to 100 cached summaries before waiting for IMAP and fetches only 25 headers in the first network batch.
+- Continues initial and older-mail backfill asynchronously in bounded batches, with a 200-header budget for periodic jobs.
+- Enables SQLite write-ahead logging for concurrent cache reads and background updates.
+- Keeps UID-based incremental refresh, 60-second watchdogs and a maximum of three simultaneous account connections.
+
+## User-controlled synchronisation
+
+- Adds per-account Manual, 15-minute, 30-minute, hourly, 2-hour, 6-hour, 12-hour and daily intervals.
+- Replaces repeating alarms with persisted, network-aware Android JobScheduler work.
+- Separates background cache refresh from notification preference.
+- Adds explicit settings for server read-state updates, server deletion and server Drafts synchronisation.
+- Defaults deletion to local-only and persists hidden-message tombstones across refreshes.
+- Moves server deletions to Trash when supported and always saves a local Draft before optional server Draft sync.
+
+## MailXperts 1.4.1
 
 ## Inbox loading and sync reliability
 

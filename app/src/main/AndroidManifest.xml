@@ -22,6 +22,10 @@
         <activity android:name=".MailboxActivity" android:exported="false" />
         <activity android:name=".AccountsActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />
+        <service
+            android:name=".MailSyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
         <receiver android:name=".ScheduledEmailReceiver" android:exported="false" />
         <receiver android:name=".MailSyncReceiver" android:exported="false" />
         <receiver android:name=".RescheduleReceiver" android:exported="true">

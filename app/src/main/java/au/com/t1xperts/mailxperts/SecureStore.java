@@ -107,7 +107,11 @@ final class SecureStore {
         o.put("smtpPort", a.smtpPort);
         o.put("smtpSecurity", a.smtpSecurity == null ? AccountConfig.SMTP_SSL : a.smtpSecurity);
         o.put("syncEnabled", a.syncEnabled);
+        o.put("syncIntervalMinutes", SyncPolicy.normalizeInterval(a.syncIntervalMinutes));
         o.put("notificationsEnabled", a.notificationsEnabled);
+        o.put("deleteFromServer", a.deleteFromServer);
+        o.put("syncReadState", a.syncReadState);
+        o.put("syncDraftsToServer", a.syncDraftsToServer);
         o.put("signatureEnabled", a.signatureEnabled);
         o.put("signatureHtml", a.signatureHtml == null ? "" : a.signatureHtml);
         o.put("password", a.password == null || a.password.isEmpty() ? "" : encrypt(a.password));
@@ -128,7 +132,12 @@ final class SecureStore {
             a.smtpPort = o.optInt("smtpPort", a.smtpPort);
             a.smtpSecurity = o.optString("smtpSecurity", AccountConfig.SMTP_SSL);
             a.syncEnabled = o.optBoolean("syncEnabled", true);
+            a.syncIntervalMinutes = SyncPolicy.normalizeInterval(
+                    o.optInt("syncIntervalMinutes", SyncPolicy.DEFAULT_INTERVAL_MINUTES));
             a.notificationsEnabled = o.optBoolean("notificationsEnabled", true);
+            a.deleteFromServer = o.optBoolean("deleteFromServer", false);
+            a.syncReadState = o.optBoolean("syncReadState", true);
+            a.syncDraftsToServer = o.optBoolean("syncDraftsToServer", false);
             a.signatureEnabled = o.optBoolean("signatureEnabled", false);
             a.signatureHtml = o.optString("signatureHtml", "");
             String enc = o.optString("password", "");

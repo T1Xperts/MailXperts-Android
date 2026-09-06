@@ -51,15 +51,7 @@ public class LocalFolderActivity extends Activity {
         list.setOnItemClickListener((parent, view, position, id) -> edit(items.get(position)));
         list.setOnItemLongClickListener((parent, view, position, id) -> {
             LocalStore.LocalMessage message = items.get(position);
-            new AlertDialog.Builder(this)
-                    .setTitle("Delete this item?")
-                    .setPositiveButton("Delete", (dialog, which) -> {
-                        if (LocalStore.SCHEDULED.equals(message.type)) Scheduler.cancel(this, message.id);
-                        db.delete(message.id);
-                        refresh();
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+            confirmDelete(message);
             return true;
         });
         root.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
@@ -132,6 +124,46 @@ public class LocalFolderActivity extends Activity {
         startActivity(intent);
     }
 
+    private void confirmDelete(LocalStore.LocalMessage message) {
+        AccountConfig configured = accountFor(message);
+        boolean deleteRemoteDraft = message.serverUid > 0L && configured != null
+                && configured.syncDraftsToServer;
+        new AlertDialog.Builder(this)
+                .setTitle("Delete this item?")
+                .setMessage(deleteRemoteDraft
+                        ? "This local item and its synchronised server Draft copy will be deleted."
+                        : "This item will be deleted from this device. No server Draft will be changed.")
+                .setPositiveButton("Delete", (dialog, which) ->
+                        deleteItem(message, configured, deleteRemoteDraft))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteItem(LocalStore.LocalMessage message, AccountConfig configured,
+                            boolean deleteRemoteDraft) {
+        if (LocalStore.SCHEDULED.equals(message.type)) Scheduler.cancel(this, message.id);
+        DraftSyncDispatcher.cancel(message.id);
+        if (!deleteRemoteDraft) {
+            db.delete(message.id);
+            refresh();
+            return;
+        }
+        status.setText("Deleting local and server Draft…");
+        executor.execute(() -> {
+            try {
+                MailRepository.deleteServerDraft(configured, message.serverUid);
+                db.delete(message.id);
+                runOnUiThread(this::refresh);
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Server Draft deletion failed: "
+                            + MailRepository.safe(error), Toast.LENGTH_LONG).show();
+                    refresh();
+                });
+            }
+        });
+    }
+
     private void retry(LocalStore.LocalMessage message, Button button) {
         AccountConfig configured = accountFor(message);
         if (configured == null) {
@@ -141,15 +173,24 @@ public class LocalFolderActivity extends Activity {
         }
         button.setEnabled(false);
         button.setText("Retrying…");
+        DraftSyncDispatcher.cancel(message.id);
         executor.execute(() -> {
             try {
                 MailRepository.SendResult result = MailRepository.sendHtml(configured,
                         message.to, message.cc, message.bcc, message.subject, message.html);
+                String draftWarning = "";
+                if (message.serverUid > 0L) {
+                    try { MailRepository.deleteServerDraft(configured, message.serverUid); }
+                    catch (Exception ignored) {
+                        draftWarning = " • old server Draft may require manual deletion";
+                    }
+                }
                 db.delete(message.id);
+                String toast = (result.sentCopySaved
+                        ? "Sent and saved in Sent"
+                        : "Sent; Sent-folder warning: " + result.sentCopyWarning) + draftWarning;
                 runOnUiThread(() -> {
-                    Toast.makeText(this, result.sentCopySaved
-                            ? "Sent and saved in Sent"
-                            : "Sent; Sent-folder warning: " + result.sentCopyWarning, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, toast, Toast.LENGTH_LONG).show();
                     refresh();
                 });
             } catch (Exception error) {
@@ -204,6 +245,13 @@ public class LocalFolderActivity extends Activity {
                 error.setTextSize(12);
                 row.addView(error);
             }
+            if (LocalStore.DRAFT.equals(type)
+                    && message.lastError != null && !message.lastError.isEmpty()) {
+                TextView warning = Ui.text(LocalFolderActivity.this, message.lastError);
+                warning.setTextColor(Ui.error(LocalFolderActivity.this));
+                warning.setTextSize(12);
+                row.addView(warning);
+            }
             if (LocalStore.SCHEDULED.equals(type)) {
                 TextView next = Ui.text(LocalFolderActivity.this,
                         "Next: " + DateFormat.getDateTimeInstance().format(message.scheduledAt)
@@ -226,11 +274,7 @@ public class LocalFolderActivity extends Activity {
             }
             if (LocalStore.SCHEDULED.equals(type)) {
                 Button cancel = Ui.compactButton(LocalFolderActivity.this, "Cancel");
-                cancel.setOnClickListener(v -> {
-                    Scheduler.cancel(LocalFolderActivity.this, message.id);
-                    db.delete(message.id);
-                    refresh();
-                });
+                cancel.setOnClickListener(v -> confirmDelete(message));
                 buttons.addView(cancel, new LinearLayout.LayoutParams(
                         0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             }
@@ -241,6 +285,7 @@ public class LocalFolderActivity extends Activity {
 
     @Override protected void onDestroy() {
         executor.shutdownNow();
+        if (db != null) db.close();
         super.onDestroy();
     }
 }

@@ -80,8 +80,8 @@ public class MailboxActivity extends Activity {
 
         LinearLayout server = Ui.card(this);
         server.addView(Ui.label(this, allAccounts
-                ? "UNIFIED SERVER MAILBOXES — LATEST 1,000 PER ACCOUNT"
-                : "SERVER MAILBOXES — LATEST 1,000 MESSAGES"));
+                ? "UNIFIED SERVER MAILBOXES — CACHE-FIRST • UP TO 1,000 PER ACCOUNT"
+                : "SERVER MAILBOXES — CACHE-FIRST • UP TO 1,000 MESSAGES"));
         server.addView(Ui.secondaryButton(this,
                 allAccounts ? "Unified Inbox — all received email" : "Inbox — received email",
                 v -> openServer(MailRepository.INBOX)));
@@ -114,7 +114,7 @@ public class MailboxActivity extends Activity {
             startActivity(intent);
         });
         root.addView(compose);
-        TextView version = Ui.text(this, "MailXperts v1.4.1  •  Powered by T1Xperts");
+        TextView version = Ui.text(this, "MailXperts v1.5.0  •  Powered by T1Xperts");
         version.setTextColor(Ui.muted(this));
         version.setTextSize(12);
         version.setGravity(android.view.Gravity.CENTER);

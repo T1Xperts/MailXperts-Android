@@ -24,17 +24,37 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
 
     private static void send(Context context, long id) {
         LocalStore db = new LocalStore(context);
-        LocalStore.LocalMessage message = db.get(id);
-        if (message == null || !LocalStore.SCHEDULED.equals(message.type)) return;
-        AccountConfig account = new SecureStore(context).load(message.accountId);
-        if (!message.accountId.equals(account.id) || !account.isUsable()) {
-            copyToOutbox(db, message, "Scheduled send failed: account credentials are unavailable.");
+        try {
+            LocalStore.LocalMessage message = db.get(id);
+            if (message == null || !LocalStore.SCHEDULED.equals(message.type)) return;
+            AccountConfig account = new SecureStore(context).load(message.accountId);
+            if (!message.accountId.equals(account.id) || !account.isUsable()) {
+                copyToOutbox(db, message,
+                        "Scheduled send failed: account credentials are unavailable.");
+                finishOccurrence(context, db, message);
+                return;
+            }
+            boolean sent = false;
+            try {
+                MailRepository.sendHtml(account, message.to, message.cc, message.bcc,
+                        message.subject, message.html);
+                sent = true;
+            } catch (Exception error) {
+                copyToOutbox(db, message,
+                        "Scheduled send failed: " + MailRepository.safe(error));
+            }
+            if (sent && message.serverUid > 0L) {
+                try {
+                    MailRepository.deleteServerDraft(account, message.serverUid);
+                    message.serverUid = 0L;
+                } catch (Exception ignored) {
+                    // Sending succeeded; a Draft-cleanup failure must never cause a duplicate send.
+                }
+            }
             finishOccurrence(context, db, message);
-            return;
+        } finally {
+            db.close();
         }
-        try { MailRepository.sendHtml(account, message.to, message.cc, message.bcc, message.subject, message.html); }
-        catch (Exception error) { copyToOutbox(db, message, "Scheduled send failed: " + MailRepository.safe(error)); }
-        finishOccurrence(context, db, message);
     }
 
     private static void copyToOutbox(LocalStore db, LocalStore.LocalMessage source, String error) {
@@ -46,6 +66,7 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
         outbox.bcc = source.bcc;
         outbox.subject = source.subject;
         outbox.html = source.html;
+        outbox.serverUid = source.serverUid;
         outbox.lastError = error;
         db.save(outbox);
     }

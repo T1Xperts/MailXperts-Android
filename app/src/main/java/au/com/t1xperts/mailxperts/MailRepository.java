@@ -3,6 +3,7 @@ package au.com.t1xperts.mailxperts;
 import android.text.Html;
 import android.text.TextUtils;
 
+import com.sun.mail.imap.AppendUID;
 import com.sun.mail.imap.IMAPFolder;
 
 import java.net.SocketTimeoutException;
@@ -40,6 +41,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.search.BodyTerm;
 import javax.mail.search.FromStringTerm;
+import javax.mail.search.MessageIDTerm;
 import javax.mail.search.OrTerm;
 import javax.mail.search.RecipientStringTerm;
 import javax.mail.search.SearchTerm;
@@ -49,6 +51,8 @@ final class MailRepository {
     static final String INBOX = "INBOX";
     static final String SENT = "SENT";
     static final String JUNK = "JUNK";
+    static final String DRAFTS = "DRAFTS";
+    static final String TRASH = "TRASH";
     private static final int IMAP_CONNECT_TIMEOUT_MS = 10_000;
     private static final int IMAP_READ_TIMEOUT_MS = 15_000;
     private static final int IMAP_WRITE_TIMEOUT_MS = 15_000;
@@ -125,15 +129,24 @@ final class MailRepository {
         final long oldestCachedUid;
         final long knownUidValidity;
         final boolean loadOlder;
+        final int maxBackfillMessages;
 
         SyncRequest(int requestedLimit, int cachedCount, long newestCachedUid,
                     long oldestCachedUid, long knownUidValidity, boolean loadOlder) {
+            this(requestedLimit, cachedCount, newestCachedUid, oldestCachedUid,
+                    knownUidValidity, loadOlder, Integer.MAX_VALUE);
+        }
+
+        SyncRequest(int requestedLimit, int cachedCount, long newestCachedUid,
+                    long oldestCachedUid, long knownUidValidity, boolean loadOlder,
+                    int maxBackfillMessages) {
             this.requestedLimit = SyncPlanner.clampRequestedLimit(requestedLimit);
             this.cachedCount = Math.max(0, cachedCount);
             this.newestCachedUid = Math.max(0L, newestCachedUid);
             this.oldestCachedUid = Math.max(0L, oldestCachedUid);
             this.knownUidValidity = Math.max(0L, knownUidValidity);
             this.loadOlder = loadOlder;
+            this.maxBackfillMessages = Math.max(0, maxBackfillMessages);
         }
     }
 
@@ -249,7 +262,8 @@ final class MailRepository {
             }
 
             if (cachedCount <= 0 || newestCachedUid <= 0L || oldestCachedUid <= 0L) {
-                int expected = Math.min(total, request.requestedLimit);
+                int expected = SyncPlanner.limitBackfill(
+                        Math.min(total, request.requestedLimit), request.maxBackfillMessages);
                 processed += fetchRanges(account, kind, folder, uidFolder,
                         SyncPlanner.newestFirst(total, expected,
                                 SyncPlanner.QUICK_BATCH_SIZE,
@@ -257,7 +271,8 @@ final class MailRepository {
                         0L, false, expected, "Loading recent mail", observer, token);
             } else if (request.loadOlder) {
                 processed += fetchOlder(account, kind, folder, uidFolder, oldestCachedUid,
-                        Math.max(0, request.requestedLimit - cachedCount),
+                        SyncPlanner.limitBackfill(request.requestedLimit - cachedCount,
+                                request.maxBackfillMessages),
                         request.requestedLimit, uidValidity, total, observer, token);
             } else {
                 // Refresh is proportional to new mail, not to the entire cached window.
@@ -271,7 +286,8 @@ final class MailRepository {
                 // Resume an interrupted initial backfill without re-fetching completed batches.
                 if (cachedCount < request.requestedLimit) {
                     processed += fetchOlder(account, kind, folder, uidFolder, oldestCachedUid,
-                            request.requestedLimit - cachedCount,
+                            SyncPlanner.limitBackfill(request.requestedLimit - cachedCount,
+                                    request.maxBackfillMessages),
                             request.requestedLimit, uidValidity, total, observer, token);
                 }
             }
@@ -453,6 +469,11 @@ final class MailRepository {
     }
 
     static FullMessage fetchMessage(AccountConfig account, String kind, long uid) throws Exception {
+        return fetchMessage(account, kind, uid, true);
+    }
+
+    static FullMessage fetchMessage(
+            AccountConfig account, String kind, long uid, boolean markReadOnServer) throws Exception {
         Session session = imapSession(account);
         Store store = null;
         Folder folder = null;
@@ -461,11 +482,11 @@ final class MailRepository {
             store.connect(account.imapHost, account.imapPort, account.username, account.password);
             folder = resolveFolder(store, kind, false);
             if (folder == null || !folder.exists()) throw new MessagingException("Mailbox folder is unavailable.");
-            folder.open(Folder.READ_WRITE);
+            folder.open(markReadOnServer ? Folder.READ_WRITE : Folder.READ_ONLY);
             UIDFolder uidFolder = (UIDFolder) folder;
             Message message = uidFolder.getMessageByUID(uid);
             if (message == null) throw new MessagingException("Message is no longer available.");
-            message.setFlag(Flags.Flag.SEEN, true);
+            if (markReadOnServer) message.setFlag(Flags.Flag.SEEN, true);
             return new FullMessage(uid, addresses(message.getFrom()),
                     addresses(message.getRecipients(Message.RecipientType.TO)), message.getSubject(),
                     message.getReceivedDate() != null ? message.getReceivedDate() : message.getSentDate(),
@@ -512,6 +533,106 @@ final class MailRepository {
             }
         } finally {
             closeQuietly(source, store);
+        }
+    }
+
+    /** Moves the selected server message to Trash, falling back to IMAP deletion if necessary. */
+    static void deleteMessage(AccountConfig account, String sourceKind, long uid) throws Exception {
+        Session session = imapSession(account);
+        Store store = null;
+        Folder source = null;
+        try {
+            store = session.getStore("imaps");
+            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            source = resolveFolder(store, sourceKind, false);
+            if (source == null || !source.exists()) {
+                throw new MessagingException("Source mailbox is unavailable.");
+            }
+            source.open(Folder.READ_WRITE);
+            Message message = ((UIDFolder) source).getMessageByUID(uid);
+            if (message == null) throw new MessagingException("Message is no longer available.");
+
+            Folder trash = resolveFolder(store, TRASH, true);
+            if (trash != null && (!trash.exists() && !trash.create(Folder.HOLDS_MESSAGES))) {
+                trash = null;
+            }
+            if (trash == null || source.getFullName().equalsIgnoreCase(trash.getFullName())) {
+                message.setFlag(Flags.Flag.DELETED, true);
+                source.expunge();
+                return;
+            }
+            moveMessages(source, trash, new Message[]{message});
+        } finally {
+            closeQuietly(source, store);
+        }
+    }
+
+    /** Appends or replaces one IMAP Draft after its local copy has already been saved. */
+    static long saveServerDraft(AccountConfig account, LocalStore.LocalMessage local) throws Exception {
+        Session session = imapSession(account);
+        Store store = null;
+        Folder drafts = null;
+        try {
+            MimeMessage message = buildMessage(session, account, local.to, local.cc, local.bcc,
+                    local.subject, local.html);
+            message.setFlag(Flags.Flag.DRAFT, true);
+            store = session.getStore("imaps");
+            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            drafts = resolveFolder(store, DRAFTS, true);
+            if (drafts == null || (!drafts.exists() && !drafts.create(Folder.HOLDS_MESSAGES))) {
+                throw new MessagingException("The provider did not expose a Drafts folder.");
+            }
+            drafts.open(Folder.READ_WRITE);
+            long newUid = 0L;
+            if (drafts instanceof IMAPFolder) {
+                AppendUID[] result = ((IMAPFolder) drafts).appendUIDMessages(
+                        new Message[]{message});
+                if (result != null && result.length > 0 && result[0] != null) {
+                    newUid = result[0].uid;
+                }
+            } else {
+                drafts.appendMessages(new Message[]{message});
+            }
+            if (newUid <= 0L && drafts instanceof UIDFolder
+                    && message.getMessageID() != null) {
+                // UIDPLUS is optional. Resolve the just-appended Draft by its unique Message-ID
+                // so later edits can replace it instead of creating remote duplicates.
+                Message[] matches = drafts.search(new MessageIDTerm(message.getMessageID()));
+                UIDFolder uidFolder = (UIDFolder) drafts;
+                for (Message match : matches) newUid = Math.max(newUid, uidFolder.getUID(match));
+            }
+
+            if (newUid > 0L && local.serverUid > 0L && local.serverUid != newUid) {
+                Message previous = ((UIDFolder) drafts).getMessageByUID(local.serverUid);
+                if (previous != null) {
+                    previous.setFlag(Flags.Flag.DELETED, true);
+                    drafts.expunge();
+                }
+            }
+            return newUid;
+        } finally {
+            closeQuietly(drafts, store);
+        }
+    }
+
+    static void deleteServerDraft(AccountConfig account, long uid) throws Exception {
+        if (uid <= 0L) return;
+        Session session = imapSession(account);
+        Store store = null;
+        Folder drafts = null;
+        try {
+            store = session.getStore("imaps");
+            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            drafts = resolveFolder(store, DRAFTS, false);
+            if (drafts == null || !drafts.exists()) return;
+            drafts.open(Folder.READ_WRITE);
+            Message message = ((UIDFolder) drafts).getMessageByUID(uid);
+            if (message != null) {
+                message.setFlag(Flags.Flag.DELETED, true);
+                drafts.expunge();
+            }
+        } finally {
+            closeQuietly(drafts, store);
         }
     }
 
@@ -618,7 +739,44 @@ final class MailRepository {
             if (createIfMissing && !fallback.exists()) fallback.create(Folder.HOLDS_MESSAGES);
             return fallback;
         }
+        if (DRAFTS.equals(kind)) {
+            Folder special = findBySpecialUse(store, "\\Drafts");
+            if (special != null) return special;
+            String[] candidates = {"Drafts", "INBOX.Drafts", "Draft", "[Gmail]/Drafts"};
+            Folder found = findExisting(store, candidates, "draft");
+            if (found != null) return found;
+            Folder fallback = store.getFolder("Drafts");
+            if (createIfMissing && !fallback.exists()) fallback.create(Folder.HOLDS_MESSAGES);
+            return fallback;
+        }
+        if (TRASH.equals(kind)) {
+            Folder special = findBySpecialUse(store, "\\Trash");
+            if (special != null) return special;
+            String[] candidates = {"Trash", "Deleted Items", "Deleted Messages", "INBOX.Trash", "[Gmail]/Trash"};
+            Folder found = findExisting(store, candidates, "trash", "deleted");
+            if (found != null) return found;
+            Folder fallback = store.getFolder("Trash");
+            if (createIfMissing && !fallback.exists()) fallback.create(Folder.HOLDS_MESSAGES);
+            return fallback;
+        }
         return store.getFolder(kind);
+    }
+
+    private static void moveMessages(Folder source, Folder destination, Message[] messages)
+            throws MessagingException {
+        try {
+            if (source instanceof IMAPFolder) {
+                ((IMAPFolder) source).moveMessages(messages, destination);
+            } else {
+                source.copyMessages(messages, destination);
+                for (Message message : messages) message.setFlag(Flags.Flag.DELETED, true);
+                source.expunge();
+            }
+        } catch (MessagingException moveError) {
+            source.copyMessages(messages, destination);
+            for (Message message : messages) message.setFlag(Flags.Flag.DELETED, true);
+            source.expunge();
+        }
     }
 
     private static Folder findExisting(Store store, String[] candidates, String... fragments) {

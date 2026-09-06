@@ -36,9 +36,13 @@ public class SettingsActivity extends Activity {
     private EditText signature;
     private Spinner provider;
     private Spinner smtpSecurity;
+    private Spinner syncInterval;
     private TextView providerHelp;
     private Switch syncEnabled;
     private Switch notificationsEnabled;
+    private Switch deleteFromServer;
+    private Switch syncReadState;
+    private Switch syncDraftsToServer;
     private Switch signatureEnabled;
     private Button save;
     private TextView status;
@@ -183,17 +187,74 @@ public class SettingsActivity extends Activity {
         provider.post(() -> providerReady = true);
 
         LinearLayout preferences = Ui.card(this);
-        preferences.addView(Ui.label(this, "MAIL PREFERENCES"));
-        syncEnabled = preferenceSwitch("Sync over IMAP", current.syncEnabled);
-        notificationsEnabled = preferenceSwitch("New mail notifications — secure 15-minute sync", current.notificationsEnabled);
-        signatureEnabled = preferenceSwitch("Automatically add signature", current.signatureEnabled);
+        preferences.addView(Ui.label(this, "CACHE-FIRST SYNCHRONISATION"));
+        syncEnabled = preferenceSwitch("Automatic IMAP synchronisation", current.syncEnabled);
         preferences.addView(syncEnabled);
+        preferences.addView(Ui.label(this, "CHECK FOR NEW MAIL"));
+        syncInterval = new Spinner(this);
+        ArrayAdapter<String> intervalAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, SyncPolicy.INTERVAL_LABELS) {
+            private TextView decorate(View view, boolean dropdown) {
+                TextView text = (TextView) view;
+                text.setTextColor(Ui.textColor(SettingsActivity.this));
+                text.setTextSize(15);
+                text.setPadding(Ui.dp(SettingsActivity.this, 12), Ui.dp(SettingsActivity.this, 12),
+                        Ui.dp(SettingsActivity.this, 12), Ui.dp(SettingsActivity.this, 12));
+                if (dropdown) text.setBackgroundColor(Ui.panel(SettingsActivity.this));
+                return text;
+            }
+            @Override public View getView(int position, View convertView, ViewGroup parent) {
+                return decorate(super.getView(position, convertView, parent), false);
+            }
+            @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                return decorate(super.getDropDownView(position, convertView, parent), true);
+            }
+        };
+        intervalAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        syncInterval.setAdapter(intervalAdapter);
+        syncInterval.setSelection(SyncPolicy.indexOf(current.syncIntervalMinutes), false);
+        preferences.addView(syncInterval);
+        TextView cacheNote = Ui.text(this,
+                "Cached messages open first. New headers are checked in the background, and older mail fills in progressively without blocking the inbox.");
+        cacheNote.setTextColor(Ui.muted(this));
+        cacheNote.setTextSize(13);
+        preferences.addView(cacheNote);
+
+        notificationsEnabled = preferenceSwitch("Notify me when new mail arrives", current.notificationsEnabled);
         preferences.addView(notificationsEnabled);
+
+        preferences.addView(Ui.label(this, "SERVER ACTIONS"));
+        syncReadState = preferenceSwitch(
+                "Mark opened messages as read on the server", current.syncReadState);
+        deleteFromServer = preferenceSwitch(
+                "Delete from server too — move to Trash", current.deleteFromServer);
+        syncDraftsToServer = preferenceSwitch(
+                "Keep saved Drafts in the server Drafts folder", current.syncDraftsToServer);
+        preferences.addView(syncReadState);
+        preferences.addView(deleteFromServer);
+        preferences.addView(syncDraftsToServer);
+        TextView actionNote = Ui.text(this,
+                "Safe default: server deletion is off. When off, Delete only hides the message on this device. Drafts always save locally first; server Drafts sync is optional.");
+        actionNote.setTextColor(Ui.muted(this));
+        actionNote.setTextSize(13);
+        preferences.addView(actionNote);
+
+        preferences.addView(Ui.label(this, "SIGNATURE"));
+        signatureEnabled = preferenceSwitch("Automatically add signature", current.signatureEnabled);
         preferences.addView(signatureEnabled);
         signature = Ui.multiLine(this, "Signature text", 4);
         signature.setText(current.signatureHtml == null ? "" : Html.fromHtml(current.signatureHtml, Html.FROM_HTML_MODE_LEGACY).toString());
         signature.setEnabled(signatureEnabled.isChecked());
         signatureEnabled.setOnCheckedChangeListener((button, checked) -> signature.setEnabled(checked));
+        syncEnabled.setOnCheckedChangeListener((button, checked) -> updateSyncPreferenceState());
+        syncInterval.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+            @Override public void onItemSelected(
+                    AdapterView<?> parent, View view, int position, long rowId) {
+                updateSyncPreferenceState();
+            }
+        });
+        updateSyncPreferenceState();
         preferences.addView(signature);
         root.addView(preferences);
 
@@ -252,6 +313,15 @@ public class SettingsActivity extends Activity {
         return toggle;
     }
 
+    private void updateSyncPreferenceState() {
+        if (syncEnabled == null || syncInterval == null || notificationsEnabled == null) return;
+        boolean automatic = syncEnabled.isChecked();
+        syncInterval.setEnabled(automatic);
+        int index = Math.max(0, syncInterval.getSelectedItemPosition());
+        boolean periodic = automatic && SyncPolicy.INTERVAL_MINUTES[index] > 0;
+        notificationsEnabled.setEnabled(periodic);
+    }
+
     private AccountConfig read() {
         AccountConfig account = current;
         ProviderPreset.Definition definition = (ProviderPreset.Definition) provider.getSelectedItem();
@@ -269,7 +339,12 @@ public class SettingsActivity extends Activity {
         try { account.smtpPort = Integer.parseInt(smtpPort.getText().toString().trim()); }
         catch (Exception ignored) { account.smtpPort = 0; }
         account.syncEnabled = syncEnabled.isChecked();
+        int intervalIndex = Math.max(0, syncInterval.getSelectedItemPosition());
+        account.syncIntervalMinutes = SyncPolicy.INTERVAL_MINUTES[intervalIndex];
         account.notificationsEnabled = notificationsEnabled.isChecked();
+        account.deleteFromServer = deleteFromServer.isChecked();
+        account.syncReadState = syncReadState.isChecked();
+        account.syncDraftsToServer = syncDraftsToServer.isChecked();
         account.signatureEnabled = signatureEnabled.isChecked();
         String plainSignature = signature.getText().toString().trim();
         account.signatureHtml = TextUtils.htmlEncode(plainSignature).replace("\n", "<br>");

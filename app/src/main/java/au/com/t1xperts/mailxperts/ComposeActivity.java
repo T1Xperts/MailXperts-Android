@@ -253,7 +253,17 @@ public class ComposeActivity extends ComponentActivity {
     }
 
     private LocalStore.LocalMessage snapshot(String html, String type) {
-        LocalStore.LocalMessage message = existing == null ? new LocalStore.LocalMessage() : existing;
+        // Reload before saving so an asynchronous server Draft UID cannot be overwritten by
+        // the Activity's older in-memory snapshot.
+        LocalStore.LocalMessage persisted = existing != null && existing.id > 0L
+                ? local.get(existing.id) : null;
+        LocalStore.LocalMessage message = persisted != null ? persisted
+                : existing == null ? new LocalStore.LocalMessage() : existing;
+        if (existing != null && existing.accountId != null
+                && !existing.accountId.equals(accountId)) {
+            // A remote Draft UID is scoped to its original account and cannot be reused.
+            message.serverUid = 0L;
+        }
         message.accountId = accountId;
         message.type = type;
         message.to = to.getText().toString().trim();
@@ -265,8 +275,9 @@ public class ComposeActivity extends ComponentActivity {
     }
 
     private void saveDraft(String html) {
+        String previousType = existing == null ? "" : existing.type;
         LocalStore.LocalMessage message = snapshot(html, LocalStore.DRAFT);
-        if (existing != null && LocalStore.SCHEDULED.equals(existing.type)) Scheduler.cancel(this, existing.id);
+        if (LocalStore.SCHEDULED.equals(previousType)) Scheduler.cancel(this, message.id);
         message.lastError = "";
         message.scheduledAt = 0;
         local.save(message);
@@ -274,6 +285,10 @@ public class ComposeActivity extends ComponentActivity {
         Toast.makeText(this, "Saved in Drafts", Toast.LENGTH_SHORT).show();
         status.setTextColor(Ui.muted(this));
         status.setText("Draft saved at " + DateFormat.getTimeInstance(DateFormat.SHORT).format(System.currentTimeMillis()));
+        if (account.syncDraftsToServer) {
+            DraftSyncDispatcher.enqueue(this, message.id, message.updatedAt);
+            status.setText("Draft saved locally • server Drafts sync queued");
+        }
     }
 
     private void sendNow(String html) {
@@ -284,16 +299,28 @@ public class ComposeActivity extends ComponentActivity {
         status.setText("Sending via secure SMTP and saving a copy to Sent…");
         LocalStore.LocalMessage snapshot = snapshot(html, existing != null ? existing.type : LocalStore.DRAFT);
         AccountConfig sendingAccount = account;
+        if (snapshot.id > 0L) DraftSyncDispatcher.cancel(snapshot.id);
         executor.execute(() -> {
             try {
                 MailRepository.SendResult result = MailRepository.sendHtml(sendingAccount,
                         snapshot.to, snapshot.cc, snapshot.bcc, snapshot.subject, snapshot.html);
+                String remoteDraftWarning = "";
+                if (snapshot.serverUid > 0L) {
+                    try {
+                        MailRepository.deleteServerDraft(sendingAccount, snapshot.serverUid);
+                    } catch (Exception cleanupError) {
+                        remoteDraftWarning = " • old server Draft may require manual deletion";
+                    }
+                }
                 if (existing != null) {
                     Scheduler.cancel(this, existing.id);
                     local.delete(existing.id);
                 }
+                String toast = (result.sentCopySaved ? "Sent and saved in Sent"
+                        : "Sent; Sent-folder warning: " + result.sentCopyWarning)
+                        + remoteDraftWarning;
                 runOnUiThread(() -> {
-                    Toast.makeText(this, result.sentCopySaved ? "Sent and saved in Sent" : "Sent; Sent-folder warning: " + result.sentCopyWarning, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, toast, Toast.LENGTH_LONG).show();
                     finish();
                 });
             } catch (Exception error) {
@@ -333,6 +360,7 @@ public class ComposeActivity extends ComponentActivity {
                             int choice = ((AlertDialog) repeatDialog).getListView().getCheckedItemPosition();
                             LocalStore.LocalMessage message = snapshot(html, LocalStore.SCHEDULED);
                             if (existing != null) Scheduler.cancel(this, existing.id);
+                            if (message.id > 0L) DraftSyncDispatcher.cancel(message.id);
                             message.scheduledAt = when.getTimeInMillis();
                             message.recurrence = values[Math.max(0, choice)];
                             message.lastError = "";

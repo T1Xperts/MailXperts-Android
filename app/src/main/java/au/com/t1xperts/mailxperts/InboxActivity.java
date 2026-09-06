@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class InboxActivity extends Activity {
     private static final int MAX_PARALLEL_ACCOUNTS = 3;
-    private static final long FOREGROUND_REFRESH_INTERVAL_MS = 5L * 60L * 1_000L;
     private static final long PROGRESS_RENDER_THROTTLE_MS = 200L;
 
     private final ExecutorService coordinator = Executors.newSingleThreadExecutor(runnable -> {
@@ -68,12 +67,13 @@ public class InboxActivity extends Activity {
     private volatile boolean allAtMaximum;
     private boolean firstResume = true;
     private volatile boolean destroyed;
+    private long foregroundRefreshIntervalMs;
 
     private final Runnable periodicRefresh = new Runnable() {
         @Override public void run() {
             if (destroyed) return;
-            startSync(false);
-            mainHandler.postDelayed(this, FOREGROUND_REFRESH_INTERVAL_MS);
+            startSync(false, false);
+            schedulePeriodicRefresh();
         }
     };
 
@@ -95,6 +95,7 @@ public class InboxActivity extends Activity {
             if (account != null) accounts.add(account);
         }
         if (accounts.isEmpty()) { finish(); return; }
+        foregroundRefreshIntervalMs = shortestAutomaticInterval();
 
         localStore = new LocalStore(this);
         accountExecutor = Executors.newFixedThreadPool(
@@ -114,11 +115,11 @@ public class InboxActivity extends Activity {
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
-        refreshButton = Ui.secondaryButton(this, "Refresh", v -> startSync(false));
+        refreshButton = Ui.secondaryButton(this, "Refresh", v -> startSync(false, true));
         actions.addView(refreshButton, new LinearLayout.LayoutParams(0, Ui.dp(this, 52), 1f));
         loadOlderButton = Ui.secondaryButton(this,
                 allAccounts ? "Load 1,000 older/account" : "Load 1,000 older",
-                v -> startSync(true));
+                v -> startSync(true, true));
         LinearLayout.LayoutParams olderParams =
                 new LinearLayout.LayoutParams(0, Ui.dp(this, 52), 1f);
         olderParams.setMargins(Ui.dp(this, 8), 0, 0, 0);
@@ -141,7 +142,7 @@ public class InboxActivity extends Activity {
         root.addView(list, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         Ui.setContentView(this, root);
-        startSync(false);
+        startSync(false, false);
     }
 
     private View buildHeader() {
@@ -171,14 +172,14 @@ public class InboxActivity extends Activity {
         return header;
     }
 
-    private void startSync(boolean loadOlder) {
+    private void startSync(boolean loadOlder, boolean force) {
         if (destroyed || !syncing.compareAndSet(false, true)) return;
         setSyncControls(true);
         lastProgressRenderAt.set(0L);
-        coordinatorFuture = coordinator.submit(() -> runSync(loadOlder));
+        coordinatorFuture = coordinator.submit(() -> runSync(loadOlder, force));
     }
 
-    private void runSync(boolean loadOlder) {
+    private void runSync(boolean loadOlder, boolean force) {
         ArrayList<AccountWork> work = new ArrayList<>();
         LinkedHashMap<String, Integer> targets = new LinkedHashMap<>();
         ArrayList<String> errors = new ArrayList<>();
@@ -190,14 +191,31 @@ public class InboxActivity extends Activity {
                         ? SyncPlanner.nextRequestedLimit(state.requestedLimit)
                         : SyncPlanner.clampRequestedLimit(state.requestedLimit);
                 targets.put(configured.id, target);
-                work.add(new AccountWork(configured, target, state));
+                boolean automatic = configured.syncEnabled
+                        && SyncPolicy.normalizeInterval(configured.syncIntervalMinutes)
+                        != SyncPolicy.MANUAL;
+                boolean due = SyncPolicy.isDue(state.lastSuccessfulSyncAt,
+                        System.currentTimeMillis(), configured.syncIntervalMinutes);
+                if (force || loadOlder || (automatic && due)) {
+                    work.add(new AccountWork(configured, target, state));
+                }
                 localStore.saveSyncState(configured.id, kind, target,
                         state.uidValidity, state.lastSuccessfulSyncAt, state.serverMessageCount);
             }
-            List<MailRepository.Summary> cached = combinedSnapshot(targets);
+            List<MailRepository.Summary> cached = combinedSnapshot(
+                    targets, SyncPlanner.FIRST_CACHE_RENDER_LIMIT);
             postSnapshot(cached, cached.isEmpty()
-                    ? "Connecting securely…"
-                    : "Showing " + cached.size() + " cached messages • checking for updates…");
+                    ? (work.isEmpty() ? "No cached mail • tap Refresh to connect" : "Connecting securely…")
+                    : "Showing cached mail instantly" + (work.isEmpty()
+                    ? " • up to date" : " • checking for updates…"));
+
+            if (work.isEmpty()) {
+                recalculatePagingState();
+                List<MailRepository.Summary> fullCache = combinedSnapshot(targets);
+                postResult(fullCache, "Showing " + fullCache.size()
+                        + " cached messages • automatic sync is not due", null);
+                return;
+            }
 
             ExecutorCompletionService<AccountResult> completion =
                     new ExecutorCompletionService<>(accountExecutor);
@@ -218,7 +236,7 @@ public class InboxActivity extends Activity {
             String summary = smartOnly
                     ? "Showing " + finalSnapshot.size() + " priority messages"
                     : "Showing " + finalSnapshot.size() + " messages • sync complete";
-            if (allAccounts) summary += " • " + successes + "/" + accounts.size() + " accounts";
+            if (allAccounts) summary += " • " + successes + "/" + work.size() + " refreshed accounts";
             if (!errors.isEmpty()) summary += "\n" + errors.size() + " account(s) could not sync";
             postResult(finalSnapshot, summary, successes == 0 && !errors.isEmpty()
                     ? errors.get(0) : null);
@@ -297,13 +315,18 @@ public class InboxActivity extends Activity {
     }
 
     private List<MailRepository.Summary> combinedSnapshot(Map<String, Integer> targets) {
+        return combinedSnapshot(targets, SyncPlanner.MAX_MESSAGE_LIMIT);
+    }
+
+    private List<MailRepository.Summary> combinedSnapshot(
+            Map<String, Integer> targets, int maximumPerAccount) {
         ArrayList<MailRepository.Summary> fetched = new ArrayList<>();
         for (AccountConfig configured : accounts) {
             Integer requested = targets.get(configured.id);
             int limit = requested == null
                     ? localStore.getSyncState(configured.id, kind).requestedLimit : requested;
-            fetched.addAll(localStore.listCached(
-                    configured.id, configured.displayName(), kind, limit));
+            fetched.addAll(localStore.listCached(configured.id, configured.displayName(), kind,
+                    Math.min(limit, maximumPerAccount)));
         }
         fetched.sort((left, right) -> Long.compare(
                 right.date == null ? 0L : right.date.getTime(),
@@ -422,14 +445,30 @@ public class InboxActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         mainHandler.removeCallbacks(periodicRefresh);
-        mainHandler.postDelayed(periodicRefresh, FOREGROUND_REFRESH_INTERVAL_MS);
+        schedulePeriodicRefresh();
         if (firstResume) firstResume = false;
-        else startSync(false);
+        else startSync(false, false);
     }
 
     @Override protected void onPause() {
         mainHandler.removeCallbacks(periodicRefresh);
         super.onPause();
+    }
+
+    private long shortestAutomaticInterval() {
+        long shortest = Long.MAX_VALUE;
+        for (AccountConfig configured : accounts) {
+            if (!configured.syncEnabled) continue;
+            long interval = SyncPolicy.intervalMillis(configured.syncIntervalMinutes);
+            if (interval > 0L) shortest = Math.min(shortest, interval);
+        }
+        return shortest == Long.MAX_VALUE ? 0L : shortest;
+    }
+
+    private void schedulePeriodicRefresh() {
+        if (!destroyed && foregroundRefreshIntervalMs > 0L) {
+            mainHandler.postDelayed(periodicRefresh, foregroundRefreshIntervalMs);
+        }
     }
 
     @Override protected void onDestroy() {

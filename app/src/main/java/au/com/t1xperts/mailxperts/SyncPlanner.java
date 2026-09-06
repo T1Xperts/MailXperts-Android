@@ -6,8 +6,10 @@ import java.util.List;
 
 /** Produces bounded IMAP sequence-number ranges in newest-first order. */
 final class SyncPlanner {
-    static final int QUICK_BATCH_SIZE = 50;
+    static final int QUICK_BATCH_SIZE = 25;
     static final int BACKGROUND_BATCH_SIZE = 100;
+    static final int FIRST_CACHE_RENDER_LIMIT = 100;
+    static final int PERIODIC_BACKFILL_BUDGET = 200;
     static final int INITIAL_MESSAGE_LIMIT = 1_000;
     static final int OLDER_PAGE_SIZE = 1_000;
     static final int MAX_MESSAGE_LIMIT = 5_000;
@@ -38,6 +40,10 @@ final class SyncPlanner {
     static int nextRequestedLimit(int currentLimit) {
         int current = clampRequestedLimit(currentLimit);
         return Math.min(MAX_MESSAGE_LIMIT, current + OLDER_PAGE_SIZE);
+    }
+
+    static int limitBackfill(int requestedCount, int workBudget) {
+        return Math.max(0, Math.min(Math.max(0, requestedCount), Math.max(0, workBudget)));
     }
 
     /** Plans at most {@code count} messages ending at the supplied IMAP sequence number. */

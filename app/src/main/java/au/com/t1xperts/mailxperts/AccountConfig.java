@@ -18,7 +18,11 @@ final class AccountConfig {
     String smtpSecurity = SMTP_SSL;
     String password = "";
     boolean syncEnabled = true;
+    int syncIntervalMinutes = SyncPolicy.DEFAULT_INTERVAL_MINUTES;
     boolean notificationsEnabled = true;
+    boolean deleteFromServer = false;
+    boolean syncReadState = true;
+    boolean syncDraftsToServer = false;
     boolean signatureEnabled = false;
     String signatureHtml = "";
 

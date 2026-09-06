@@ -1,22 +1,28 @@
-# MailXperts Android 1.4.1
+# MailXperts Android 1.5.0
 
-MailXperts is the T1Xperts smart Android email client for secure IMAP and SMTP mail. Version 1.4.1 fixes the long first-load path while retaining v1.4 multi-account and unified mailbox features.
+MailXperts is the T1Xperts smart Android email client for secure IMAP and SMTP mail. Version 1.5.0 makes mailbox startup cache-first, moves periodic work off the UI lifecycle and gives every account explicit server-action controls.
 
 ## Version identity
 
 - Application ID: `au.com.t1xperts.mailxperts`
-- Release version: `1.4.1`
-- Release version code: `8`
+- Release version: `1.5.0`
+- Release version code: `9`
 - Minimum Android: 8.0 / API 26
 - Compile and target Android: API 36
 - Development builds use `au.com.t1xperts.mailxperts.dev` so they cannot accidentally replace the signed production app.
 
-## v1.4.1 loading fix
+## v1.5.0 instant loading and sync controls
 
-- Shows cached message summaries immediately, then refreshes them in the background.
-- Renders the newest 50 messages first and continues in bounded 100-message batches.
+- Paints up to 100 cached summaries before any network result and then expands the list asynchronously.
+- Fetches only the newest 25 headers in the first network batch, followed by bounded 100-message batches.
+- Uses SQLite write-ahead logging so cache reads remain responsive while background batches are committed.
 - Uses IMAP UID checkpoints for incremental refresh and interrupted-sync resume.
 - Loads older mail in explicit 1,000-message pages, capped at 5,000 per account.
+- Allows Manual, 15-minute, 30-minute, hourly, 2-hour, 6-hour, 12-hour or daily refresh per account.
+- Uses Android JobScheduler with a network constraint and incremental 200-header periodic backfill budget.
+- Adds separate settings for server read-state updates, server deletion and server Drafts synchronisation.
+- Defaults deletion to local-only, with persistent local tombstones so hidden messages do not reappear.
+- Moves server-deleted messages to Trash when supported and saves Drafts locally before optional server sync.
 - Invalidates stale cache safely when IMAP UIDVALIDITY changes.
 - Runs unified-account sync with at most three concurrent connections.
 - Adds connection, read, write and whole-sync timeouts so a server cannot leave the screen loading forever.
@@ -57,7 +63,7 @@ MailXperts is the T1Xperts smart Android email client for secure IMAP and SMTP m
 - Initial Inbox and Sent sync limited to the latest 1,000 messages, with explicit 1,000-message older-mail loading.
 - Rich-text and HTML-source composer with device font discovery on Android 10 and newer, plus safe generic fallbacks.
 - Automatic per-account signatures.
-- Secure background new-mail notifications using Android's platform alarm and notification APIs at a 15-minute interval.
+- Secure background cache refresh and new-mail notifications at the interval selected for each account.
 - Multi-account encrypted credentials using Android Keystore.
 - Local Drafts, manual-retry Outbox, one-time and recurring scheduled mail.
 - TLS server-identity checking for IMAP and SMTP; cleartext traffic remains disabled.
@@ -90,7 +96,7 @@ Never commit the keystore or credentials. See [SIGNING.md](SIGNING.md).
 
 The supplied v1.1 APK was signed with an unavailable temporary debug key. Android therefore could not accept v1.2 as an in-place update over that APK.
 
-Version 1.4.1 is configured to use the same permanent production certificate as v1.2.0 through v1.4.0 and installs as a normal in-place update when built with that keystore.
+Version 1.5.0 is configured to use the same permanent production certificate as v1.2.0 through v1.4.0 and installs as a normal in-place update when built with that keystore.
 
 From v1.2 onward, keep using the v1.2 release keystore and increasing `versionCode`; future APKs will install as normal upgrades.
 

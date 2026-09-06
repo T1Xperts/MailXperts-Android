@@ -8,13 +8,13 @@ import org.junit.Test;
 import java.util.List;
 
 public class SyncPlannerTest {
-    @Test public void initialSyncPaintsFiftyThenCoversExactlyOneThousand() {
+    @Test public void initialSyncPaintsTwentyFiveThenCoversExactlyOneThousand() {
         List<SyncPlanner.Range> ranges = SyncPlanner.newestFirst(
                 1_250, 1_000, SyncPlanner.QUICK_BATCH_SIZE,
                 SyncPlanner.BACKGROUND_BATCH_SIZE);
 
-        assertEquals(50, ranges.get(0).size());
-        assertEquals(1_201, ranges.get(0).startInclusive);
+        assertEquals(25, ranges.get(0).size());
+        assertEquals(1_226, ranges.get(0).startInclusive);
         assertEquals(1_250, ranges.get(0).endInclusive);
         assertEquals(1_000, totalSize(ranges));
         assertEquals(251, ranges.get(ranges.size() - 1).startInclusive);
@@ -40,6 +40,15 @@ public class SyncPlannerTest {
     @Test public void emptyMailboxProducesNoRanges() {
         assertTrue(SyncPlanner.newestFirst(0, 1_000, 50, 100).isEmpty());
         assertTrue(SyncPlanner.newestFirst(1_000, 0, 50, 100).isEmpty());
+    }
+
+    @Test public void periodicBackfillHonoursItsWorkBudget() {
+        assertEquals(200, SyncPlanner.limitBackfill(900,
+                SyncPlanner.PERIODIC_BACKFILL_BUDGET));
+        assertEquals(75, SyncPlanner.limitBackfill(75,
+                SyncPlanner.PERIODIC_BACKFILL_BUDGET));
+        assertEquals(0, SyncPlanner.limitBackfill(-1,
+                SyncPlanner.PERIODIC_BACKFILL_BUDGET));
     }
 
     @Test public void generatedRangesAreBoundedContiguousAndExact() {
