@@ -112,9 +112,35 @@ public class MessageActivity extends Activity {
         settings.setJavaScriptEnabled(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        settings.setBlockNetworkLoads(true);
+        settings.setLoadsImagesAutomatically(true);
+        settings.setBlockNetworkImage(false);
+        settings.setBlockNetworkLoads(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        body.setWebViewClient(new WebViewClient());
+        body.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url == null || url.trim().isEmpty()) return false;
+                Uri target = Uri.parse(url);
+                String scheme = target.getScheme();
+                if (scheme == null || "about".equalsIgnoreCase(scheme)
+                        || "data".equalsIgnoreCase(scheme)) {
+                    return false;
+                }
+                if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)
+                        || "mailto".equalsIgnoreCase(scheme) || "tel".equalsIgnoreCase(scheme)
+                        || "sms".equalsIgnoreCase(scheme)) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, target));
+                    } catch (ActivityNotFoundException error) {
+                        Toast.makeText(MessageActivity.this,
+                                "No compatible app is installed to open this link.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    return true;
+                }
+                // Do not let unknown/custom schemes execute inside the email WebView.
+                return true;
+            }
+        });
         root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         Ui.setContentView(this, root);
         load();
