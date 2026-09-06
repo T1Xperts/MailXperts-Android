@@ -114,7 +114,7 @@ public class MailboxActivity extends Activity {
             startActivity(intent);
         });
         root.addView(compose);
-        TextView version = Ui.text(this, "MailXperts v1.5.0  •  Powered by T1Xperts");
+        TextView version = Ui.text(this, "MailXperts v1.5.1  •  Powered by T1Xperts");
         version.setTextColor(Ui.muted(this));
         version.setTextSize(12);
         version.setGravity(android.view.Gravity.CENTER);

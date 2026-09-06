@@ -1,4 +1,21 @@
-# MailXperts 1.5.0
+# MailXperts 1.5.1
+
+## Background-sync reliability
+
+- Adds the network-state permission required by Android JobScheduler connectivity constraints.
+- Prevents an OEM scheduler failure from undoing an otherwise successful IMAP/SMTP account save.
+- Reports connection, secure-storage and background-scheduling outcomes separately instead of mislabelling scheduler failures as authentication failures.
+- Preserves manual refresh if periodic background work is unavailable.
+
+## Rich HTML signatures
+
+- Adds a dedicated per-account visual and HTML-source signature editor.
+- Preserves safe table-based HTML, inline formatting, links and device fonts.
+- Repairs signatures that v1.5.0 accidentally stored as visible escaped markup.
+- Adds bounded local/shared image insertion and HTTP/HTTPS image links to signatures and composed mail.
+- Removes active elements, event handlers and unsafe URL protocols before signature storage.
+
+## MailXperts 1.5.0
 
 ## Instant cache-first mail
 

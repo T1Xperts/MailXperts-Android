@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="au.com.t1xperts.mailxperts">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
@@ -15,6 +16,7 @@
         <activity android:name=".AppearanceActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
+        <activity android:name=".SignatureEditorActivity" android:exported="false" />
         <activity android:name=".ComposeActivity" android:exported="false" />
         <activity android:name=".MessageActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />

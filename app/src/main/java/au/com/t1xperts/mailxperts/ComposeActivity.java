@@ -4,14 +4,9 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
-import android.graphics.fonts.Font;
-import android.graphics.fonts.SystemFonts;
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -27,24 +22,16 @@ import android.widget.Toast;
 import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ComposeActivity extends ComponentActivity {
+    private static final int PICK_COMPOSE_IMAGE = 4101;
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ArrayList<AccountConfig> accounts = new ArrayList<>();
     private AccountConfig account;
@@ -64,7 +51,8 @@ public class ComposeActivity extends ComponentActivity {
     private LocalStore.LocalMessage existing;
     private boolean editorReady;
     private boolean bodyPopulated;
-    private FontBridge fontBridge;
+    private EditorSupport.FontBridge fontBridge;
+    private EditorSupport.ImageBridge imageBridge;
 
     @Override protected void onCreate(Bundle state) {
         ThemeManager.apply(this);
@@ -112,8 +100,10 @@ public class ComposeActivity extends ComponentActivity {
         settings.setAllowContentAccess(false);
         settings.setBlockNetworkLoads(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        fontBridge = new FontBridge();
+        fontBridge = new EditorSupport.FontBridge();
+        imageBridge = new EditorSupport.ImageBridge(this, PICK_COMPOSE_IMAGE);
         editor.addJavascriptInterface(fontBridge, "MailXpertsFonts");
+        editor.addJavascriptInterface(imageBridge, "MailXpertsImages");
         editor.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) { return true; }
             @Override public void onPageFinished(WebView view, String url) {
@@ -122,11 +112,12 @@ public class ComposeActivity extends ComponentActivity {
                 populate();
             }
         });
-        editor.loadDataWithBaseURL("https://mailxperts.local/", readEditor(), "text/html", "UTF-8", null);
+        editor.loadDataWithBaseURL("https://mailxperts.local/",
+                EditorSupport.editorAsset(this), "text/html", "UTF-8", null);
         root.addView(editor, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         status = Ui.text(this, "From: " + account.email
-                + " • UTF-8 Unicode + ASCII + emoji • Rich text + HTML source • device fonts");
+                + " • UTF-8 + emoji • Rich text + HTML source • fonts + images");
         status.setTextColor(Ui.muted(this));
         root.addView(status);
         LinearLayout actions = new LinearLayout(this);
@@ -202,7 +193,7 @@ public class ComposeActivity extends ComponentActivity {
                 accountId = account.id;
                 if (status != null) {
                     status.setText("From: " + account.email
-                            + " • UTF-8 Unicode + ASCII + emoji • Rich text + HTML source • device fonts");
+                            + " • UTF-8 + emoji • Rich text + HTML source • fonts + images");
                 }
             }
         });
@@ -236,7 +227,8 @@ public class ComposeActivity extends ComponentActivity {
             bodyPopulated = true;
             String initial = "<p><br></p>";
             if (account.signatureEnabled && account.signatureHtml != null && !account.signatureHtml.trim().isEmpty()) {
-                initial += "<div data-mailxperts-signature=\"true\"><br>" + account.signatureHtml + "</div>";
+                initial += "<div data-mailxperts-signature=\"true\"><br>"
+                        + SignatureHtml.normaliseStored(account.signatureHtml) + "</div>";
             }
             setEditorHtml(initial);
         }
@@ -249,7 +241,8 @@ public class ComposeActivity extends ComponentActivity {
             Toast.makeText(this, "Editor is still loading", Toast.LENGTH_SHORT).show();
             return;
         }
-        editor.evaluateJavascript("window.MailXpertsEditor.getHtml()", value -> action.run(decode(value)));
+        editor.evaluateJavascript("window.MailXpertsEditor.getHtml()",
+                value -> action.run(EditorSupport.decodeJavascriptString(value)));
     }
 
     private LocalStore.LocalMessage snapshot(String html, String type) {
@@ -389,80 +382,23 @@ public class ComposeActivity extends ComponentActivity {
     }
 
     private void setEditorHtml(String html) {
-        editor.evaluateJavascript("window.MailXpertsEditor.setHtml(" + JSONObject.quote(html == null ? "" : html) + ")", null);
+        EditorSupport.setHtml(editor, html);
     }
 
-    private String readEditor() {
-        try (InputStream input = getAssets().open("editor.html"); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4096];
-            int count;
-            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
-            return output.toString(StandardCharsets.UTF_8.name());
-        } catch (Exception error) {
-            return "<html><body>Editor unavailable</body></html>";
-        }
-    }
-
-    private String decode(String value) {
-        if (value == null || "null".equals(value)) return "";
-        try { return new JSONArray("[" + value + "]").getString(0); }
-        catch (Exception ignored) { return ""; }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_COMPOSE_IMAGE || resultCode != RESULT_OK || data == null) return;
+        EditorSupport.insertPickedImage(this, editor, data.getData(),
+                EditorSupport.COMPOSE_IMAGE_LIMIT_BYTES);
     }
 
     @Override protected void onDestroy() {
         executor.shutdownNow();
         if (editor != null) {
             editor.removeJavascriptInterface("MailXpertsFonts");
+            editor.removeJavascriptInterface("MailXpertsImages");
             editor.destroy();
         }
         super.onDestroy();
-    }
-
-    private final class FontBridge {
-        private final LinkedHashMap<String, File> fonts = new LinkedHashMap<>();
-        private final LinkedHashMap<String, String> names = new LinkedHashMap<>();
-
-        FontBridge() {
-            if (Build.VERSION.SDK_INT < 29) return;
-            try {
-                int index = 0;
-                for (Font font : SystemFonts.getAvailableFonts()) {
-                    File file = font.getFile();
-                    if (file == null || !file.isFile() || file.length() <= 0 || file.length() > 4_500_000L) continue;
-                    String key = "font_" + index++;
-                    fonts.put(key, file);
-                    names.put(key, friendlyName(file.getName()));
-                }
-            } catch (Exception ignored) {}
-        }
-
-        String fontListJson() {
-            JSONArray array = new JSONArray();
-            for (Map.Entry<String, String> entry : names.entrySet()) {
-                JSONObject item = new JSONObject();
-                try {
-                    item.put("key", entry.getKey());
-                    item.put("name", entry.getValue());
-                    array.put(item);
-                } catch (Exception ignored) {}
-            }
-            return array.toString();
-        }
-
-        @JavascriptInterface public String fontData(String key) {
-            File file = fonts.get(key);
-            if (file == null) return "";
-            try (FileInputStream input = new FileInputStream(file); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-                byte[] buffer = new byte[8192];
-                int count;
-                while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
-                return "data:font/ttf;base64," + Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
-            } catch (Exception ignored) { return ""; }
-        }
-
-        private String friendlyName(String filename) {
-            String name = filename.replaceFirst("(?i)\\.(ttf|otf|ttc)$", "").replace('_', ' ').replace('-', ' ');
-            return name.replaceAll("\\s+", " ").trim();
-        }
     }
 }

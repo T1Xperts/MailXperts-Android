@@ -33,7 +33,7 @@
   <select onchange="block(this.value);this.selectedIndex=0"><option value="">Style</option><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="blockquote">Quote</option></select>
   <button onclick="cmd('insertUnorderedList')">• List</button><button onclick="cmd('insertOrderedList')">1. List</button>
   <button onclick="togglePicker('emojiPicker')">😀 Emoji</button><button onclick="togglePicker('symbolPicker')">Ω Symbols</button>
-  <button onclick="link()">Link</button><button onclick="cmd('removeFormat')">Clear</button>
+  <button onclick="link()">Link</button><button onclick="pickImage()">Image</button><button onclick="imageUrl()">Image URL</button><button onclick="cmd('removeFormat')">Clear</button>
 </div>
 <div id="emojiPicker" class="picker" aria-label="Emoji picker">
   <button onclick="insertText('😀')">😀</button><button onclick="insertText('😊')">😊</button><button onclick="insertText('😂')">😂</button>
@@ -59,14 +59,20 @@ function togglePicker(id){if(sourceMode)return;['emojiPicker','symbolPicker'].fo
 function block(tag){if(tag)cmd('formatBlock',tag)}
 function fontSize(size){if(size)cmd('fontSize',size)}
 function link(){if(sourceMode)return;const u=prompt('Link URL (https://...)');if(u&&/^https?:\/\//i.test(u))cmd('createLink',u)}
+function pickImage(){if(sourceMode)return;try{if(window.MailXpertsImages)MailXpertsImages.chooseImage()}catch(e){}}
+function imageUrl(){if(sourceMode)return;const u=prompt('Image URL (http:// or https://)');if(u&&/^https?:\/\//i.test(u))insertImage(u,'Signature image')}
+function escapeAttribute(value){return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function insertImage(source,alt){if(sourceMode||!source)return;const e=document.getElementById('editor');e.focus();document.execCommand('insertHTML',false,'<img src="'+escapeAttribute(source)+'" alt="'+escapeAttribute(alt||'Image')+'" style="max-width:100%;height:auto">')}
+function safeMarkup(value){const doc=new DOMParser().parseFromString(value||'','text/html');doc.querySelectorAll('script,iframe,object,embed,form,input,button,meta,base,link,svg,math').forEach(node=>node.remove());doc.body.querySelectorAll('*').forEach(node=>Array.from(node.attributes).forEach(attr=>{const name=attr.name.toLowerCase(),raw=attr.value.trim(),lower=raw.toLowerCase();if(name.startsWith('on'))node.removeAttribute(attr.name);else if((name==='href'||name==='src')&&!(lower.startsWith('https://')||lower.startsWith('http://')||(name==='href'&&(lower.startsWith('mailto:')||lower.startsWith('tel:')||lower.startsWith('#')))||(name==='src'&&(lower.startsWith('cid:')||/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(raw)))))node.removeAttribute(attr.name);else if(name==='style'&&/(expression\s*\(|url\s*\(\s*['"]?\s*(javascript|vbscript):)/i.test(raw))node.removeAttribute(attr.name)}));return doc.body.innerHTML}
 function showSource(){if(sourceMode)return;const e=document.getElementById('editor'),s=document.getElementById('source');s.value=e.innerHTML;e.style.display='none';s.style.display='block';sourceMode=true;document.querySelectorAll('.picker').forEach(p=>p.classList.remove('open'));document.getElementById('richTab').classList.remove('active');document.getElementById('sourceTab').classList.add('active');s.focus()}
-function showRich(){if(!sourceMode)return;const e=document.getElementById('editor'),s=document.getElementById('source');e.innerHTML=s.value;s.style.display='none';e.style.display='block';sourceMode=false;document.getElementById('sourceTab').classList.remove('active');document.getElementById('richTab').classList.add('active');e.focus()}
+function showRich(){if(!sourceMode)return;const e=document.getElementById('editor'),s=document.getElementById('source');e.innerHTML=safeMarkup(s.value);s.value=e.innerHTML;s.style.display='none';e.style.display='block';sourceMode=false;document.getElementById('sourceTab').classList.remove('active');document.getElementById('richTab').classList.add('active');e.focus()}
 function applyFont(key){if(!key||sourceMode)return;if(key.startsWith('generic:')){cmd('fontName',key.substring(8));return}try{if(!loadedFonts[key]&&window.MailXpertsFonts){const data=MailXpertsFonts.fontData(key);if(data){const family='MX_'+key.replace(/[^a-z0-9_]/gi,'_');document.getElementById('deviceFonts').textContent+=`@font-face{font-family:'${family}';src:url('${data}') format('truetype');}`;loadedFonts[key]=family}}if(loadedFonts[key])cmd('fontName',loadedFonts[key])}catch(e){}}
 function setDeviceFonts(items){const select=document.getElementById('font');(items||[]).forEach(item=>{const option=document.createElement('option');option.value=item.key;option.textContent=item.name;select.appendChild(option)})}
 function setTheme(dark){document.documentElement.classList.toggle('light',!dark)}
 window.MailXpertsEditor={
-  getHtml:function(){return sourceMode?document.getElementById('source').value:document.getElementById('editor').innerHTML},
-  setHtml:function(value){document.getElementById('editor').innerHTML=value||'<p><br></p>';document.getElementById('source').value=value||''},
+  getHtml:function(){return safeMarkup(sourceMode?document.getElementById('source').value:document.getElementById('editor').innerHTML)},
+  setHtml:function(value){const safe=safeMarkup(value);document.getElementById('editor').innerHTML=safe||'<p><br></p>';document.getElementById('source').value=safe||''},
+  insertImage:insertImage,
   setTheme:setTheme,
   setDeviceFonts:setDeviceFonts
 };

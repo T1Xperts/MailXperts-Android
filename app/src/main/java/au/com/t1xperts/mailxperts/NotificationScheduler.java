@@ -46,38 +46,44 @@ final class NotificationScheduler {
         if (jobs != null) jobs.cancel(jobId(accountId));
     }
 
-    static void update(Context context, AccountConfig account) {
-        if (account == null || account.id == null || account.id.isEmpty()) return;
-        cancelLegacyAlarm(context, account.id);
-        JobScheduler jobs = context.getSystemService(JobScheduler.class);
-        if (jobs == null) return;
+    static boolean update(Context context, AccountConfig account) {
+        if (account == null || account.id == null || account.id.isEmpty()) return false;
+        try {
+            cancelLegacyAlarm(context, account.id);
+            JobScheduler jobs = context.getSystemService(JobScheduler.class);
+            if (jobs == null) return false;
 
-        int intervalMinutes = SyncPolicy.normalizeInterval(account.syncIntervalMinutes);
-        if (!account.syncEnabled || intervalMinutes == SyncPolicy.MANUAL || !account.isUsable()) {
-            jobs.cancel(jobId(account.id));
-            return;
-        }
+            int intervalMinutes = SyncPolicy.normalizeInterval(account.syncIntervalMinutes);
+            if (!account.syncEnabled || intervalMinutes == SyncPolicy.MANUAL
+                    || !account.isUsable()) {
+                jobs.cancel(jobId(account.id));
+                return true;
+            }
 
-        long interval = SyncPolicy.intervalMillis(intervalMinutes);
-        long flex = Math.max(MINIMUM_FLEX_MS, interval / 10L);
-        JobInfo existing = jobs.getPendingJob(jobId(account.id));
-        if (existing != null && existing.isPeriodic()
-                && existing.getIntervalMillis() == interval
-                && existing.getFlexMillis() == Math.min(interval, flex)) {
-            // Reopening the app must not reset an already-correct periodic schedule.
-            return;
+            long interval = SyncPolicy.intervalMillis(intervalMinutes);
+            long flex = Math.max(MINIMUM_FLEX_MS, interval / 10L);
+            JobInfo existing = jobs.getPendingJob(jobId(account.id));
+            if (existing != null && existing.isPeriodic()
+                    && existing.getIntervalMillis() == interval
+                    && existing.getFlexMillis() == Math.min(interval, flex)) {
+                // Reopening the app must not reset an already-correct periodic schedule.
+                return true;
+            }
+            PersistableBundle extras = new PersistableBundle();
+            extras.putString("account_id", account.id);
+            JobInfo job = new JobInfo.Builder(jobId(account.id),
+                    new ComponentName(context, MailSyncJobService.class))
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .setPersisted(true)
+                    .setPeriodic(interval, Math.min(interval, flex))
+                    .setBackoffCriteria(30_000L, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
+                    .setExtras(extras)
+                    .build();
+            return jobs.schedule(job) == JobScheduler.RESULT_SUCCESS;
+        } catch (RuntimeException schedulingError) {
+            // Account persistence and manual refresh must survive an OEM scheduler failure.
+            return false;
         }
-        PersistableBundle extras = new PersistableBundle();
-        extras.putString("account_id", account.id);
-        JobInfo job = new JobInfo.Builder(jobId(account.id),
-                new ComponentName(context, MailSyncJobService.class))
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPersisted(true)
-                .setPeriodic(interval, Math.min(interval, flex))
-                .setBackoffCriteria(30_000L, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
-                .setExtras(extras)
-                .build();
-        jobs.schedule(job);
     }
 
     static void updateAll(Context context) {

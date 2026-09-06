@@ -1,15 +1,25 @@
-# MailXperts Android 1.5.0
+# MailXperts Android 1.5.1
 
-MailXperts is the T1Xperts smart Android email client for secure IMAP and SMTP mail. Version 1.5.0 makes mailbox startup cache-first, moves periodic work off the UI lifecycle and gives every account explicit server-action controls.
+MailXperts is the T1Xperts smart Android email client for secure IMAP and SMTP mail. Version 1.5.1 keeps mailbox startup cache-first, repairs background scheduling and restores safe rich HTML signatures.
 
 ## Version identity
 
 - Application ID: `au.com.t1xperts.mailxperts`
-- Release version: `1.5.0`
-- Release version code: `9`
+- Release version: `1.5.1`
+- Release version code: `10`
 - Minimum Android: 8.0 / API 26
 - Compile and target Android: API 36
 - Development builds use `au.com.t1xperts.mailxperts.dev` so they cannot accidentally replace the signed production app.
+
+## v1.5.1 reliability and signature fixes
+
+- Declares Android network-state access so network-constrained 15-minute (or user-selected) background jobs can be scheduled.
+- Keeps a successful IMAP/SMTP account save successful even if an OEM job scheduler rejects background work; manual refresh remains available.
+- Separates connection, persistence and scheduler outcomes so a scheduler error is never shown as an authentication failure.
+- Replaces the plain signature box with a dedicated visual/HTML editor that preserves existing markup.
+- Migrates signatures accidentally escaped by v1.5.0 back to formatted HTML.
+- Adds bounded local/shared PNG, JPEG, GIF and WebP insertion plus HTTP/HTTPS image links to signature and message editors.
+- Sanitises active HTML and unsafe URL protocols while retaining normal email-table formatting, links, fonts and inline styles.
 
 ## v1.5.0 instant loading and sync controls
 
@@ -78,7 +88,7 @@ Development validation:
 ./gradlew clean lintDebug testDebugUnitTest assembleDebug
 ```
 
-The development APK has the `.dev` application ID and is not the production signing baseline.
+The development APK has the `.dev` application ID and is not the production signing baseline. GitHub-hosted runners create temporary debug certificates, so a debug APK can require one uninstall/reinstall when its certificate differs from a previously downloaded debug build.
 
 Signed release build:
 
@@ -96,7 +106,7 @@ Never commit the keystore or credentials. See [SIGNING.md](SIGNING.md).
 
 The supplied v1.1 APK was signed with an unavailable temporary debug key. Android therefore could not accept v1.2 as an in-place update over that APK.
 
-Version 1.5.0 is configured to use the same permanent production certificate as v1.2.0 through v1.4.0 and installs as a normal in-place update when built with that keystore.
+Version 1.5.1 is configured to use the same permanent production certificate as v1.2.0 through v1.5.0 and installs as a normal in-place update when built with that keystore.
 
 From v1.2 onward, keep using the v1.2 release keystore and increasing `versionCode`; future APKs will install as normal upgrades.
 

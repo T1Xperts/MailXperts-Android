@@ -3,8 +3,6 @@ package au.com.t1xperts.mailxperts;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Html;
-import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -24,6 +22,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SettingsActivity extends Activity {
+    private static final int EDIT_SIGNATURE = 5201;
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private EditText label;
     private EditText email;
@@ -33,7 +33,6 @@ public class SettingsActivity extends Activity {
     private EditText imapPort;
     private EditText smtpHost;
     private EditText smtpPort;
-    private EditText signature;
     private Spinner provider;
     private Spinner smtpSecurity;
     private Spinner syncInterval;
@@ -44,10 +43,13 @@ public class SettingsActivity extends Activity {
     private Switch syncReadState;
     private Switch syncDraftsToServer;
     private Switch signatureEnabled;
+    private Button editSignature;
+    private TextView signatureStatus;
     private Button save;
     private TextView status;
     private SecureStore store;
     private AccountConfig current;
+    private String signatureHtmlDraft = "";
     private boolean providerReady;
 
     @Override protected void onCreate(Bundle state) {
@@ -59,6 +61,7 @@ public class SettingsActivity extends Activity {
         if (current.provider == null || current.provider.isEmpty()) {
             current.provider = ProviderPreset.infer(current.email, current.imapHost);
         }
+        signatureHtmlDraft = SignatureHtml.normaliseStored(current.signatureHtml);
 
         ScrollView scroll = new ScrollView(this);
         LinearLayout root = Ui.vertical(this);
@@ -242,10 +245,20 @@ public class SettingsActivity extends Activity {
         preferences.addView(Ui.label(this, "SIGNATURE"));
         signatureEnabled = preferenceSwitch("Automatically add signature", current.signatureEnabled);
         preferences.addView(signatureEnabled);
-        signature = Ui.multiLine(this, "Signature text", 4);
-        signature.setText(current.signatureHtml == null ? "" : Html.fromHtml(current.signatureHtml, Html.FROM_HTML_MODE_LEGACY).toString());
-        signature.setEnabled(signatureEnabled.isChecked());
-        signatureEnabled.setOnCheckedChangeListener((button, checked) -> signature.setEnabled(checked));
+        signatureStatus = Ui.text(this, "");
+        signatureStatus.setTextColor(Ui.muted(this));
+        signatureStatus.setTextSize(13);
+        preferences.addView(signatureStatus);
+        editSignature = Ui.secondaryButton(this, "Edit rich / HTML signature",
+                v -> openSignatureEditor());
+        preferences.addView(editSignature);
+        TextView signatureNote = Ui.text(this,
+                "Edit visually or switch to HTML Source. Formatting, links, device fonts and "
+                        + "bounded local or shared images are preserved.");
+        signatureNote.setTextColor(Ui.muted(this));
+        signatureNote.setTextSize(13);
+        preferences.addView(signatureNote);
+        signatureEnabled.setOnCheckedChangeListener((button, checked) -> updateSignatureState());
         syncEnabled.setOnCheckedChangeListener((button, checked) -> updateSyncPreferenceState());
         syncInterval.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onNothingSelected(AdapterView<?> parent) {}
@@ -255,7 +268,7 @@ public class SettingsActivity extends Activity {
             }
         });
         updateSyncPreferenceState();
-        preferences.addView(signature);
+        updateSignatureState();
         root.addView(preferences);
 
         status = Ui.text(this, "");
@@ -322,6 +335,27 @@ public class SettingsActivity extends Activity {
         notificationsEnabled.setEnabled(periodic);
     }
 
+    private void updateSignatureState() {
+        if (signatureEnabled == null || editSignature == null || signatureStatus == null) return;
+        boolean enabled = signatureEnabled.isChecked();
+        signatureStatus.setAlpha(enabled ? 1f : 0.65f);
+        if (signatureHtmlDraft == null || signatureHtmlDraft.trim().isEmpty()) {
+            signatureStatus.setText(enabled
+                    ? "No signature configured yet."
+                    : "Signature is disabled for new messages.");
+        } else {
+            signatureStatus.setText(enabled
+                    ? "Formatted HTML signature is ready."
+                    : "Saved formatted signature is retained but currently disabled.");
+        }
+    }
+
+    private void openSignatureEditor() {
+        Intent intent = new Intent(this, SignatureEditorActivity.class);
+        intent.putExtra(SignatureEditorActivity.EXTRA_SIGNATURE_HTML, signatureHtmlDraft);
+        startActivityForResult(intent, EDIT_SIGNATURE);
+    }
+
     private AccountConfig read() {
         AccountConfig account = current;
         ProviderPreset.Definition definition = (ProviderPreset.Definition) provider.getSelectedItem();
@@ -346,8 +380,7 @@ public class SettingsActivity extends Activity {
         account.syncReadState = syncReadState.isChecked();
         account.syncDraftsToServer = syncDraftsToServer.isChecked();
         account.signatureEnabled = signatureEnabled.isChecked();
-        String plainSignature = signature.getText().toString().trim();
-        account.signatureHtml = TextUtils.htmlEncode(plainSignature).replace("\n", "<br>");
+        account.signatureHtml = SignatureHtml.sanitise(signatureHtmlDraft);
         return account;
     }
 
@@ -370,26 +403,52 @@ public class SettingsActivity extends Activity {
         executor.execute(() -> {
             try {
                 MailRepository.testConnections(account);
-                store.save(account);
-                NotificationScheduler.update(this, account);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "Connected — IMAP and SMTP authentication successful", Toast.LENGTH_SHORT).show();
-                    String destination = store.loadAll().size() > 1
-                            ? MailboxScope.ALL_ACCOUNTS : account.id;
-                    store.setSelectedId(destination);
-                    Intent intent = new Intent(this, MailboxActivity.class);
-                    intent.putExtra("account_id", destination);
-                    startActivity(intent);
-                    finish();
-                });
             } catch (Exception error) {
-                runOnUiThread(() -> {
-                    Ui.setEnabled(save, true, "Test IMAP + SMTP and Save", "");
-                    status.setTextColor(Ui.error(this));
-                    status.setText("Authentication failed: " + MailRepository.safe(error));
-                });
+                showSaveError("Connection test failed: ", error);
+                return;
             }
+            try {
+                store.save(account);
+            } catch (Exception error) {
+                showSaveError("Connections succeeded, but account settings could not be saved: ",
+                        error);
+                return;
+            }
+            boolean backgroundSyncReady = NotificationScheduler.update(
+                    getApplicationContext(), account);
+            runOnUiThread(() -> openSavedAccount(account, backgroundSyncReady));
         });
+    }
+
+    private void showSaveError(String prefix, Exception error) {
+        runOnUiThread(() -> {
+            Ui.setEnabled(save, true, "Test IMAP + SMTP and Save", "");
+            status.setTextColor(Ui.error(this));
+            status.setText(prefix + MailRepository.safe(error));
+        });
+    }
+
+    private void openSavedAccount(AccountConfig account, boolean backgroundSyncReady) {
+        String message = backgroundSyncReady
+                ? "Connected — IMAP and SMTP authentication successful"
+                : "Account saved. Automatic background sync could not be scheduled; manual refresh still works.";
+        Toast.makeText(this, message,
+                backgroundSyncReady ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
+        String destination = store.loadAll().size() > 1
+                ? MailboxScope.ALL_ACCOUNTS : account.id;
+        store.setSelectedId(destination);
+        Intent intent = new Intent(this, MailboxActivity.class);
+        intent.putExtra("account_id", destination);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != EDIT_SIGNATURE || resultCode != RESULT_OK || data == null) return;
+        signatureHtmlDraft = SignatureHtml.normaliseStored(
+                data.getStringExtra(SignatureEditorActivity.EXTRA_SIGNATURE_HTML));
+        updateSignatureState();
     }
 
     @Override protected void onDestroy() {
