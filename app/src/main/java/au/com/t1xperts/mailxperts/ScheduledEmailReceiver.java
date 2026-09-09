@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,19 +29,24 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
             LocalStore.LocalMessage message = db.get(id);
             if (message == null || !LocalStore.SCHEDULED.equals(message.type)) return;
             AccountConfig account = new SecureStore(context).load(message.accountId);
+            ArrayList<AttachmentRef> attachments = LocalAttachmentStore.load(context, message.id);
             if (!message.accountId.equals(account.id) || !account.isUsable()) {
-                copyToOutbox(db, message,
+                copyToOutbox(context, db, message, attachments,
                         "Scheduled send failed: account credentials are unavailable.");
-                finishOccurrence(context, db, message);
+                finishOccurrence(context, db, message, false);
                 return;
             }
             boolean sent = false;
             try {
-                MailRepository.sendHtml(account, message.to, message.cc, message.bcc,
-                        message.subject, message.html);
+                message.to = RecipientNormalizer.normalise(message.to);
+                message.cc = RecipientNormalizer.normalise(message.cc);
+                message.bcc = RecipientNormalizer.normalise(message.bcc);
+                MailAttachmentRepository.sendHtmlWithAttachments(account,
+                        message.to, message.cc, message.bcc,
+                        message.subject, message.html, attachments);
                 sent = true;
             } catch (Exception error) {
-                copyToOutbox(db, message,
+                copyToOutbox(context, db, message, attachments,
                         "Scheduled send failed: " + MailRepository.safe(error));
             }
             if (sent && message.serverUid > 0L) {
@@ -51,13 +57,15 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
                     // Sending succeeded; a Draft-cleanup failure must never cause a duplicate send.
                 }
             }
-            finishOccurrence(context, db, message);
+            finishOccurrence(context, db, message, sent);
         } finally {
             db.close();
         }
     }
 
-    private static void copyToOutbox(LocalStore db, LocalStore.LocalMessage source, String error) {
+    private static void copyToOutbox(Context context, LocalStore db,
+                                     LocalStore.LocalMessage source,
+                                     ArrayList<AttachmentRef> attachments, String error) {
         LocalStore.LocalMessage outbox = new LocalStore.LocalMessage();
         outbox.accountId = source.accountId;
         outbox.type = LocalStore.OUTBOX;
@@ -69,12 +77,15 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
         outbox.serverUid = source.serverUid;
         outbox.lastError = error;
         db.save(outbox);
+        LocalAttachmentStore.save(context, outbox.id, attachments);
     }
 
-    private static void finishOccurrence(Context context, LocalStore db, LocalStore.LocalMessage message) {
+    private static void finishOccurrence(Context context, LocalStore db,
+                                         LocalStore.LocalMessage message, boolean sent) {
         long next = Scheduler.nextRun(message.scheduledAt, message.recurrence);
         if (next <= 0L) {
             db.delete(message.id);
+            LocalAttachmentStore.delete(context, message.id, sent);
             return;
         }
         message.scheduledAt = next;
