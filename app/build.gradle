@@ -7,6 +7,7 @@ def releaseStorePassword = System.getenv('MX_KEYSTORE_PASSWORD')
 def releaseKeyAlias = System.getenv('MX_KEY_ALIAS')
 def releaseKeyPassword = System.getenv('MX_KEY_PASSWORD')
 def releaseSigningReady = [releaseKeystore, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it != null && !it.trim().isEmpty() }
+def allowUnsignedRelease = 'true'.equalsIgnoreCase(System.getenv('MX_ALLOW_UNSIGNED_RELEASE'))
 
 android {
     namespace 'au.com.t1xperts.mailxperts'
@@ -73,7 +74,7 @@ dependencies {
 
 gradle.taskGraph.whenReady { graph ->
     boolean releaseRequested = graph.allTasks.any { it.name == 'assembleRelease' || it.name == 'bundleRelease' }
-    if (releaseRequested && !releaseSigningReady) {
-        throw new GradleException('Release signing is not configured. Set MX_KEYSTORE_FILE, MX_KEYSTORE_PASSWORD, MX_KEY_ALIAS and MX_KEY_PASSWORD.')
+    if (releaseRequested && !releaseSigningReady && !allowUnsignedRelease) {
+        throw new GradleException('Release signing is not configured. Set MX_KEYSTORE_FILE, MX_KEYSTORE_PASSWORD, MX_KEY_ALIAS and MX_KEY_PASSWORD, or set MX_ALLOW_UNSIGNED_RELEASE=true for a non-distributable unsigned CI artifact.')
     }
 }
