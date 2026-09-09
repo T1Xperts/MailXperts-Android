@@ -62,20 +62,34 @@ jobs:
       - name: Install Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Restore release keystore
+
+      - name: Detect and restore release signing material
+        id: signing
         env:
           MX_KEYSTORE_BASE64: ${{ secrets.MX_KEYSTORE_BASE64 }}
+          MX_KEYSTORE_PASSWORD: ${{ secrets.MX_KEYSTORE_PASSWORD }}
+          MX_KEY_ALIAS: ${{ secrets.MX_KEY_ALIAS }}
+          MX_KEY_PASSWORD: ${{ secrets.MX_KEY_PASSWORD }}
         run: |
-          test -n "$MX_KEYSTORE_BASE64"
-          printf '%s' "$MX_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mailxperts-release.p12"
+          if [[ -n "$MX_KEYSTORE_BASE64" && -n "$MX_KEYSTORE_PASSWORD" && -n "$MX_KEY_ALIAS" && -n "$MX_KEY_PASSWORD" ]]; then
+            printf '%s' "$MX_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mailxperts-release.p12"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Release signing secrets are not configured. Building a non-distributable unsigned release artifact for secure offline signing."
+          fi
+
       - name: Build signed release APK and Android App Bundle
+        if: steps.signing.outputs.available == 'true'
         env:
           MX_KEYSTORE_FILE: ${{ runner.temp }}/mailxperts-release.p12
           MX_KEYSTORE_PASSWORD: ${{ secrets.MX_KEYSTORE_PASSWORD }}
           MX_KEY_ALIAS: ${{ secrets.MX_KEY_ALIAS }}
           MX_KEY_PASSWORD: ${{ secrets.MX_KEY_PASSWORD }}
         run: ./gradlew --no-daemon clean lintRelease testDebugUnitTest assembleRelease bundleRelease
-      - name: Verify release signature, version and checksums
+
+      - name: Verify signed release signature, version and checksums
+        if: steps.signing.outputs.available == 'true'
         run: |
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
           "$build_tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
@@ -84,7 +98,10 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk MailXperts-v1.5.1.apk
           cp app/build/outputs/bundle/release/app-release.aab MailXperts-v1.5.1.aab
           sha256sum MailXperts-v1.5.1.apk MailXperts-v1.5.1.aab > SHA256SUMS-v1.5.1.txt
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload signed release artifact
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
         with:
           name: MailXperts-v1.5.1-signed-release
           path: |
@@ -92,8 +109,9 @@ jobs:
             MailXperts-v1.5.1.aab
             SHA256SUMS-v1.5.1.txt
           if-no-files-found: error
+
       - name: Publish v1.5.1 GitHub release
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: steps.signing.outputs.available == 'true' && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -107,3 +125,28 @@ jobs:
           else
             gh release create "$tag" MailXperts-v1.5.1.apk MailXperts-v1.5.1.aab SHA256SUMS-v1.5.1.txt --target "$GITHUB_SHA" --title "MailXperts v1.5.1" --generate-notes
           fi
+
+      - name: Build unsigned release fallback
+        if: steps.signing.outputs.available != 'true'
+        env:
+          MX_ALLOW_UNSIGNED_RELEASE: 'true'
+        run: ./gradlew --no-daemon clean lintRelease testDebugUnitTest assembleRelease
+
+      - name: Verify and package unsigned release fallback
+        if: steps.signing.outputs.available != 'true'
+        run: |
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release-unsigned.apk | grep "package: name='au.com.t1xperts.mailxperts' versionCode='11' versionName='1.5.1'"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MailXperts-v1.5.1-unsigned.apk
+          sha256sum MailXperts-v1.5.1-unsigned.apk > SHA256SUMS-v1.5.1-unsigned.txt
+
+      - name: Upload unsigned release fallback
+        if: steps.signing.outputs.available != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MailXperts-v1.5.1-unsigned-release
+          path: |
+            MailXperts-v1.5.1-unsigned.apk
+            SHA256SUMS-v1.5.1-unsigned.txt
+          if-no-files-found: error
+          retention-days: 7
