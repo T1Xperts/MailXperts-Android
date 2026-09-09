@@ -2,6 +2,7 @@ package au.com.t1xperts.mailxperts;
 
 import android.content.Context;
 
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +43,9 @@ final class DraftSyncDispatcher {
             if (!message.accountId.equals(account.id) || !account.isUsable()
                     || !account.syncDraftsToServer) return;
 
-            long newUid = MailRepository.saveServerDraft(account, message);
+            ArrayList<AttachmentRef> attachments = LocalAttachmentStore.load(context, localId);
+            long newUid = MailAttachmentRepository.saveServerDraftWithAttachments(
+                    account, message, attachments);
             if (!isCurrent(localId, generation)) {
                 if (newUid > 0L) deleteQuietly(account, newUid);
                 return;
