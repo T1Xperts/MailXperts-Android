@@ -3,7 +3,9 @@ package au.com.t1xperts.mailxperts;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.ClipData;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,9 +33,11 @@ import java.util.concurrent.Executors;
 
 public class ComposeActivity extends ComponentActivity {
     private static final int PICK_COMPOSE_IMAGE = 4101;
+    private static final int PICK_ATTACHMENTS = 4102;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ArrayList<AccountConfig> accounts = new ArrayList<>();
+    private final ArrayList<AttachmentRef> attachments = new ArrayList<>();
     private AccountConfig account;
     private String accountId;
     private SecureStore store;
@@ -47,6 +51,7 @@ public class ComposeActivity extends ComponentActivity {
     private Button draft;
     private Button schedule;
     private TextView status;
+    private LinearLayout attachmentList;
     private LocalStore local;
     private LocalStore.LocalMessage existing;
     private boolean editorReady;
@@ -61,6 +66,7 @@ public class ComposeActivity extends ComponentActivity {
         local = new LocalStore(this);
         long localId = getIntent().getLongExtra("local_id", -1L);
         if (localId > 0) existing = local.get(localId);
+        if (existing != null) attachments.addAll(LocalAttachmentStore.load(this, existing.id));
         accounts.addAll(MailboxScope.usable(store));
         if (accounts.isEmpty()) {
             startActivity(new Intent(this, AccountsActivity.class));
@@ -90,6 +96,12 @@ public class ComposeActivity extends ComponentActivity {
         fields.addView(cc);
         fields.addView(bcc);
         fields.addView(subject);
+        Button attachFiles = Ui.secondaryButton(this, "📎 Attach files", v -> pickAttachments());
+        fields.addView(attachFiles);
+        attachmentList = new LinearLayout(this);
+        attachmentList.setOrientation(LinearLayout.VERTICAL);
+        fields.addView(attachmentList);
+        renderAttachments();
         root.addView(fields);
 
         editor = new WebView(this);
@@ -117,7 +129,7 @@ public class ComposeActivity extends ComponentActivity {
         root.addView(editor, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         status = Ui.text(this, "From: " + account.email
-                + " • UTF-8 + emoji • Rich text + HTML source • fonts + images");
+                + " • UTF-8 + emoji • Rich text + HTML source • fonts + images + files");
         status.setTextColor(Ui.muted(this));
         root.addView(status);
         LinearLayout actions = new LinearLayout(this);
@@ -193,7 +205,7 @@ public class ComposeActivity extends ComponentActivity {
                 accountId = account.id;
                 if (status != null) {
                     status.setText("From: " + account.email
-                            + " • UTF-8 + emoji • Rich text + HTML source • fonts + images");
+                            + " • UTF-8 + emoji • Rich text + HTML source • fonts + images + files");
                 }
             }
         });
@@ -220,8 +232,10 @@ public class ComposeActivity extends ComponentActivity {
             return;
         }
         String recipient = getIntent().getStringExtra("to");
+        String requestedCc = getIntent().getStringExtra("cc");
         String requestedSubject = getIntent().getStringExtra("subject");
         if (recipient != null && to.getText().length() == 0) to.setText(recipient);
+        if (requestedCc != null && cc.getText().length() == 0) cc.setText(requestedCc);
         if (requestedSubject != null && subject.getText().length() == 0) subject.setText(requestedSubject);
         if (editorReady && !bodyPopulated) {
             bodyPopulated = true;
@@ -230,6 +244,8 @@ public class ComposeActivity extends ComponentActivity {
                 initial += "<div data-mailxperts-signature=\"true\"><br>"
                         + SignatureHtml.normaliseStored(account.signatureHtml) + "</div>";
             }
+            String requestedHtml = getIntent().getStringExtra("initial_html");
+            if (requestedHtml != null && !requestedHtml.trim().isEmpty()) initial += requestedHtml;
             setEditorHtml(initial);
         }
     }
@@ -246,15 +262,12 @@ public class ComposeActivity extends ComponentActivity {
     }
 
     private LocalStore.LocalMessage snapshot(String html, String type) {
-        // Reload before saving so an asynchronous server Draft UID cannot be overwritten by
-        // the Activity's older in-memory snapshot.
         LocalStore.LocalMessage persisted = existing != null && existing.id > 0L
                 ? local.get(existing.id) : null;
         LocalStore.LocalMessage message = persisted != null ? persisted
                 : existing == null ? new LocalStore.LocalMessage() : existing;
         if (existing != null && existing.accountId != null
                 && !existing.accountId.equals(accountId)) {
-            // A remote Draft UID is scoped to its original account and cannot be reused.
             message.serverUid = 0L;
         }
         message.accountId = accountId;
@@ -267,6 +280,23 @@ public class ComposeActivity extends ComponentActivity {
         return message;
     }
 
+    private boolean normaliseRecipientFields() {
+        try {
+            String normalTo = RecipientNormalizer.normalise(to.getText().toString());
+            String normalCc = RecipientNormalizer.normalise(cc.getText().toString());
+            String normalBcc = RecipientNormalizer.normalise(bcc.getText().toString());
+            to.setText(normalTo);
+            cc.setText(normalCc);
+            bcc.setText(normalBcc);
+            return true;
+        } catch (IllegalArgumentException error) {
+            to.setError("Check recipient addresses");
+            status.setTextColor(Ui.error(this));
+            status.setText(error.getMessage());
+            return false;
+        }
+    }
+
     private void saveDraft(String html) {
         String previousType = existing == null ? "" : existing.type;
         LocalStore.LocalMessage message = snapshot(html, LocalStore.DRAFT);
@@ -274,6 +304,7 @@ public class ComposeActivity extends ComponentActivity {
         message.lastError = "";
         message.scheduledAt = 0;
         local.save(message);
+        LocalAttachmentStore.save(this, message.id, attachments);
         existing = message;
         Toast.makeText(this, "Saved in Drafts", Toast.LENGTH_SHORT).show();
         status.setTextColor(Ui.muted(this));
@@ -286,17 +317,21 @@ public class ComposeActivity extends ComponentActivity {
 
     private void sendNow(String html) {
         if (to.getText().toString().trim().isEmpty()) { to.setError("Recipient required"); return; }
+        if (!normaliseRecipientFields()) return;
         if (existing != null && LocalStore.SCHEDULED.equals(existing.type)) Scheduler.cancel(this, existing.id);
         Ui.setEnabled(send, false, "➤ Send", "Sending…");
         status.setTextColor(Ui.muted(this));
         status.setText("Sending via secure SMTP and saving a copy to Sent…");
         LocalStore.LocalMessage snapshot = snapshot(html, existing != null ? existing.type : LocalStore.DRAFT);
         AccountConfig sendingAccount = account;
+        ArrayList<AttachmentRef> sendingAttachments = new ArrayList<>(attachments);
+        long previousLocalId = existing == null ? -1L : existing.id;
         if (snapshot.id > 0L) DraftSyncDispatcher.cancel(snapshot.id);
         executor.execute(() -> {
             try {
-                MailRepository.SendResult result = MailRepository.sendHtml(sendingAccount,
-                        snapshot.to, snapshot.cc, snapshot.bcc, snapshot.subject, snapshot.html);
+                MailRepository.SendResult result = MailAttachmentRepository.sendHtmlWithAttachments(
+                        sendingAccount, snapshot.to, snapshot.cc, snapshot.bcc,
+                        snapshot.subject, snapshot.html, sendingAttachments);
                 String remoteDraftWarning = "";
                 if (snapshot.serverUid > 0L) {
                     try {
@@ -305,10 +340,12 @@ public class ComposeActivity extends ComponentActivity {
                         remoteDraftWarning = " • old server Draft may require manual deletion";
                     }
                 }
-                if (existing != null) {
-                    Scheduler.cancel(this, existing.id);
-                    local.delete(existing.id);
+                if (previousLocalId > 0L) {
+                    Scheduler.cancel(this, previousLocalId);
+                    local.delete(previousLocalId);
+                    LocalAttachmentStore.delete(this, previousLocalId, false);
                 }
+                AttachmentRef.deleteFiles(sendingAttachments);
                 String toast = (result.sentCopySaved ? "Sent and saved in Sent"
                         : "Sent; Sent-folder warning: " + result.sentCopyWarning)
                         + remoteDraftWarning;
@@ -319,9 +356,11 @@ public class ComposeActivity extends ComponentActivity {
             } catch (Exception error) {
                 LocalStore.LocalMessage out = snapshot;
                 out.type = LocalStore.OUTBOX;
-                out.lastError = MailRepository.safe(error);
+                out.lastError = MailRepository.safe(error instanceof Exception
+                        ? (Exception) error : new Exception(error));
                 out.scheduledAt = 0;
                 local.save(out);
+                LocalAttachmentStore.save(this, out.id, sendingAttachments);
                 existing = out;
                 runOnUiThread(() -> {
                     Ui.setEnabled(send, true, "➤ Send", "");
@@ -334,6 +373,7 @@ public class ComposeActivity extends ComponentActivity {
 
     private void pickSchedule(String html) {
         if (to.getText().toString().trim().isEmpty()) { to.setError("Recipient required"); return; }
+        if (!normaliseRecipientFields()) return;
         Calendar now = Calendar.getInstance();
         DatePickerDialog date = new DatePickerDialog(this, (dialog, year, month, day) -> {
             TimePickerDialog time = new TimePickerDialog(this, (timeDialog, hour, minute) -> {
@@ -358,6 +398,7 @@ public class ComposeActivity extends ComponentActivity {
                             message.recurrence = values[Math.max(0, choice)];
                             message.lastError = "";
                             local.save(message);
+                            LocalAttachmentStore.save(this, message.id, attachments);
                             existing = message;
                             Scheduler.schedule(this, message);
                             Toast.makeText(this, "Email scheduled", Toast.LENGTH_SHORT).show();
@@ -369,6 +410,84 @@ public class ComposeActivity extends ComponentActivity {
             time.show();
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
         date.show();
+    }
+
+    private void pickAttachments() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        try {
+            startActivityForResult(intent, PICK_ATTACHMENTS);
+        } catch (Exception error) {
+            Toast.makeText(this, "No document picker is available.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void importPickedAttachments(Intent data) {
+        ArrayList<Uri> selected = new ArrayList<>();
+        ClipData clips = data.getClipData();
+        if (clips != null) {
+            for (int i = 0; i < clips.getItemCount(); i++) {
+                Uri uri = clips.getItemAt(i).getUri();
+                if (uri != null) selected.add(uri);
+            }
+        } else if (data.getData() != null) {
+            selected.add(data.getData());
+        }
+        if (selected.isEmpty()) return;
+        status.setTextColor(Ui.muted(this));
+        status.setText("Importing " + selected.size() + " attachment(s)…");
+        executor.execute(() -> {
+            ArrayList<AttachmentRef> imported = new ArrayList<>();
+            String failure = "";
+            for (Uri uri : selected) {
+                try { imported.add(AttachmentStorage.importUri(this, uri)); }
+                catch (Exception error) {
+                    failure = error.getMessage() == null ? "Could not import an attachment." : error.getMessage();
+                    break;
+                }
+            }
+            String finalFailure = failure;
+            runOnUiThread(() -> {
+                attachments.addAll(imported);
+                renderAttachments();
+                if (finalFailure.isEmpty()) {
+                    status.setTextColor(Ui.muted(this));
+                    status.setText(imported.size() + " attachment(s) ready to send");
+                } else {
+                    status.setTextColor(Ui.error(this));
+                    status.setText(finalFailure);
+                }
+            });
+        });
+    }
+
+    private void renderAttachments() {
+        if (attachmentList == null) return;
+        attachmentList.removeAllViews();
+        if (attachments.isEmpty()) {
+            attachmentList.setVisibility(View.GONE);
+            return;
+        }
+        attachmentList.setVisibility(View.VISIBLE);
+        attachmentList.addView(Ui.label(this, "ATTACHMENTS (" + attachments.size() + ")"));
+        for (AttachmentRef attachment : new ArrayList<>(attachments)) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView label = Ui.text(this, "📎 " + attachment.name + " • "
+                    + AttachmentStorage.displaySize(attachment.size));
+            row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            Button remove = Ui.compactButton(this, "Remove");
+            remove.setOnClickListener(v -> {
+                attachments.remove(attachment);
+                try { if (attachment.file().isFile()) attachment.file().delete(); } catch (RuntimeException ignored) {}
+                renderAttachments();
+            });
+            row.addView(remove, new LinearLayout.LayoutParams(Ui.dp(this, 88), Ui.dp(this, 42)));
+            attachmentList.addView(row);
+        }
     }
 
     private void confirmClose() {
@@ -387,9 +506,13 @@ public class ComposeActivity extends ComponentActivity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != PICK_COMPOSE_IMAGE || resultCode != RESULT_OK || data == null) return;
-        EditorSupport.insertPickedImage(this, editor, data.getData(),
-                EditorSupport.COMPOSE_IMAGE_LIMIT_BYTES);
+        if (resultCode != RESULT_OK || data == null) return;
+        if (requestCode == PICK_COMPOSE_IMAGE) {
+            EditorSupport.insertPickedImage(this, editor, data.getData(),
+                    EditorSupport.COMPOSE_IMAGE_LIMIT_BYTES);
+        } else if (requestCode == PICK_ATTACHMENTS) {
+            importPickedAttachments(data);
+        }
     }
 
     @Override protected void onDestroy() {
