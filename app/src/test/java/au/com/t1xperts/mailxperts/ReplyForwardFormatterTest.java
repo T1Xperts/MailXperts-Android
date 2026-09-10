@@ -62,6 +62,18 @@ public class ReplyForwardFormatterTest {
         assertTrue(html.contains("A &lt; B &amp; C"));
     }
 
+    @Test public void replySanitisesActiveContentFromOriginalBody() {
+        String original = "<p onclick=\"alert(1)\">Keep me</p>"
+                + "<script>alert('bad')</script>"
+                + "<a href=\"javascript:alert(2)\">unsafe</a>";
+        String html = ReplyForwardFormatter.replyChain(
+                "a@example.com", "b@example.com", "", "date", "subject", original);
+        assertTrue(html.contains("Keep me"));
+        assertFalse(html.toLowerCase().contains("<script"));
+        assertFalse(html.toLowerCase().contains("onclick="));
+        assertFalse(html.toLowerCase().contains("javascript:"));
+    }
+
     @Test public void replyHandlesNullFieldsAndEmptyBody() {
         String html = ReplyForwardFormatter.replyChain(null, null, null, null, null, null);
         assertTrue(html.contains("Original message"));
@@ -91,6 +103,23 @@ public class ReplyForwardFormatterTest {
                 "a@example.com", "b@example.com", "", "date", "subject", original);
         assertTrue(html.contains("<blockquote><p>Previous</p></blockquote>"));
         assertFalse(html.contains("&lt;blockquote&gt;"));
+    }
+
+    @Test public void forwardPreservesSafeRemoteAndCidImageReferences() {
+        String original = "<p><img src='https://example.com/logo.png'><img src='cid:logo123'></p>";
+        String html = ReplyForwardFormatter.forwardChain(
+                "a@example.com", "b@example.com", "", "date", "subject", original);
+        assertTrue(html.contains("https://example.com/logo.png"));
+        assertTrue(html.contains("cid:logo123"));
+    }
+
+    @Test public void forwardSanitisesDangerousOriginalBody() {
+        String original = "<iframe src='https://bad.example'></iframe><p onmouseover='x()'>Visible</p>";
+        String html = ReplyForwardFormatter.forwardChain(
+                "a@example.com", "b@example.com", "", "date", "subject", original);
+        assertTrue(html.contains("Visible"));
+        assertFalse(html.toLowerCase().contains("iframe"));
+        assertFalse(html.toLowerCase().contains("onmouseover"));
     }
 
     @Test public void forwardOmitsCcWhenMissing() {
