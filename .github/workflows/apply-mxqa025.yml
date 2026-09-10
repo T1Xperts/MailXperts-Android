@@ -1,0 +1,35 @@
+name: Apply MX-QA-025 source patch
+
+on:
+  push:
+    branches: [ fix/mx-qa-025-reply-forward-chain ]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[mxqa025-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mx-qa-025-reply-forward-chain
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply guarded patch
+        run: python scripts/apply_mxqa025.py
+      - name: Remove one-shot patch machinery
+        run: |
+          rm -f scripts/apply_mxqa025.py
+          rm -f .github/workflows/apply-mxqa025.yml
+      - name: Commit patched source
+        run: |
+          git config user.name "T1Xperts QA Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "[mxqa025-applied] Wire previous conversation into reply and forward"
+          git push origin HEAD:fix/mx-qa-025-reply-forward-chain
