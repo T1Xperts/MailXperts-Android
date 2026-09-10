@@ -242,7 +242,10 @@ public class MessageActivity extends Activity {
         String replyTo = headerValue("Reply-To");
         intent.putExtra("to", extract(replyTo.isEmpty() ? loaded.from : replyTo));
         String subject = loaded.subject == null ? "" : loaded.subject;
-        intent.putExtra("subject", subject.toLowerCase(Locale.ROOT).startsWith("re:") ? subject : "Re: " + subject);
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
         startActivity(intent);
     }
 
@@ -259,7 +262,10 @@ public class MessageActivity extends Activity {
         intent.putExtra("to", toRecipients);
         if (!ccRecipients.isEmpty()) intent.putExtra("cc", ccRecipients);
         String subject = loaded.subject == null ? "" : loaded.subject;
-        intent.putExtra("subject", subject.toLowerCase(Locale.ROOT).startsWith("re:") ? subject : "Re: " + subject);
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
         startActivity(intent);
     }
 
@@ -268,17 +274,10 @@ public class MessageActivity extends Activity {
         Intent intent = new Intent(this, ComposeActivity.class);
         intent.putExtra("account_id", accountId);
         String subject = loaded.subject == null ? "" : loaded.subject;
-        intent.putExtra("subject", subject.toLowerCase(Locale.ROOT).startsWith("fwd:") ? subject : "Fwd: " + subject);
-        String plain = Html.fromHtml(loaded.html == null ? "" : loaded.html,
-                Html.FROM_HTML_MODE_LEGACY).toString();
         String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        String forwarded = "<hr><p><strong>Forwarded message</strong><br>"
-                + "From: " + TextUtils.htmlEncode(loaded.from == null ? "" : loaded.from) + "<br>"
-                + "Date: " + TextUtils.htmlEncode(date) + "<br>"
-                + "Subject: " + TextUtils.htmlEncode(subject) + "<br>"
-                + "To: " + TextUtils.htmlEncode(loaded.to == null ? "" : loaded.to) + "</p>"
-                + "<div style='white-space:pre-wrap'>" + TextUtils.htmlEncode(plain) + "</div>";
-        intent.putExtra("initial_html", forwarded);
+        intent.putExtra("subject", ReplyForwardFormatter.forwardSubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.forwardChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
         startActivity(intent);
     }
 
