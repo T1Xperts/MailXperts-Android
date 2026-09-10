@@ -66,10 +66,11 @@ final class ReplyForwardFormatter {
 
     private static String bodyOrPlaceholder(String html) {
         if (blank(html)) return "<p><em>(No message body)</em></p>";
-        // The message body has already passed through MailXperts' message
-        // rendering/parsing path. Preserve it verbatim so nested quoted history,
-        // tables, links and inline formatting are not flattened to plain text.
-        return html;
+        // Compose's editor has JavaScript enabled, so never inject untrusted
+        // message HTML verbatim. Reuse the app's active-content sanitizer while
+        // retaining safe nested quoted history, tables, links and formatting.
+        String safe = SignatureHtml.sanitise(html);
+        return blank(safe) ? "<p><em>(No message body)</em></p>" : safe;
     }
 
     private static boolean blank(String value) {
