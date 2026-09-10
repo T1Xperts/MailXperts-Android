@@ -33,21 +33,21 @@ jobs:
       - name: Verify, name and checksum APK
         run: |
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          cp app/build/outputs/apk/debug/app-debug.apk MailXperts-v1.5.1-debug.apk
-          "$build_tools/apksigner" verify --verbose --print-certs MailXperts-v1.5.1-debug.apk
-          "$build_tools/aapt" dump badging MailXperts-v1.5.1-debug.apk | grep -F "package: name='au.com.t1xperts.mailxperts.dev' versionCode='11' versionName='1.5.1-dev'"
-          sha256sum MailXperts-v1.5.1-debug.apk > SHA256SUMS-v1.5.1-debug.txt
+          cp app/build/outputs/apk/debug/app-debug.apk MailXperts-v1.5.2-debug.apk
+          "$build_tools/apksigner" verify --verbose --print-certs MailXperts-v1.5.2-debug.apk
+          "$build_tools/aapt" dump badging MailXperts-v1.5.2-debug.apk | grep -F "package: name='au.com.t1xperts.mailxperts.dev' versionCode='12' versionName='1.5.2-dev'"
+          sha256sum MailXperts-v1.5.2-debug.apk > SHA256SUMS-v1.5.2-debug.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: MailXperts-v1.5.1-debug-apk
+          name: MailXperts-v1.5.2-debug-apk
           path: |
-            MailXperts-v1.5.1-debug.apk
-            SHA256SUMS-v1.5.1-debug.txt
+            MailXperts-v1.5.2-debug.apk
+            SHA256SUMS-v1.5.2-debug.txt
           if-no-files-found: error
           retention-days: 30
 
   signed-release:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release v1.5.1]'))
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release v1.5.2]'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -94,23 +94,23 @@ jobs:
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
           "$build_tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
           jarsigner -verify -strict app/build/outputs/bundle/release/app-release.aab
-          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release.apk | grep "versionCode='11' versionName='1.5.1'"
-          cp app/build/outputs/apk/release/app-release.apk MailXperts-v1.5.1.apk
-          cp app/build/outputs/bundle/release/app-release.aab MailXperts-v1.5.1.aab
-          sha256sum MailXperts-v1.5.1.apk MailXperts-v1.5.1.aab > SHA256SUMS-v1.5.1.txt
+          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release.apk | grep "versionCode='12' versionName='1.5.2'"
+          cp app/build/outputs/apk/release/app-release.apk MailXperts-v1.5.2.apk
+          cp app/build/outputs/bundle/release/app-release.aab MailXperts-v1.5.2.aab
+          sha256sum MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab > SHA256SUMS-v1.5.2.txt
 
       - name: Upload signed release artifact
         if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: MailXperts-v1.5.1-signed-release
+          name: MailXperts-v1.5.2-signed-release
           path: |
-            MailXperts-v1.5.1.apk
-            MailXperts-v1.5.1.aab
-            SHA256SUMS-v1.5.1.txt
+            MailXperts-v1.5.2.apk
+            MailXperts-v1.5.2.aab
+            SHA256SUMS-v1.5.2.txt
           if-no-files-found: error
 
-      - name: Publish v1.5.1 GitHub release
+      - name: Publish v1.5.2 GitHub release
         if: steps.signing.outputs.available == 'true' && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         env:
           GH_TOKEN: ${{ github.token }}
@@ -118,12 +118,12 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             tag="$GITHUB_REF_NAME"
           else
-            tag="v1.5.1"
+            tag="v1.5.2"
           fi
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" MailXperts-v1.5.1.apk MailXperts-v1.5.1.aab SHA256SUMS-v1.5.1.txt --clobber
+            gh release upload "$tag" MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab SHA256SUMS-v1.5.2.txt --clobber
           else
-            gh release create "$tag" MailXperts-v1.5.1.apk MailXperts-v1.5.1.aab SHA256SUMS-v1.5.1.txt --target "$GITHUB_SHA" --title "MailXperts v1.5.1" --generate-notes
+            gh release create "$tag" MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab SHA256SUMS-v1.5.2.txt --target "$GITHUB_SHA" --title "MailXperts v1.5.2" --generate-notes
           fi
 
       - name: Build unsigned release fallback
@@ -136,17 +136,17 @@ jobs:
         if: steps.signing.outputs.available != 'true'
         run: |
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release-unsigned.apk | grep "package: name='au.com.t1xperts.mailxperts' versionCode='11' versionName='1.5.1'"
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MailXperts-v1.5.1-unsigned.apk
-          sha256sum MailXperts-v1.5.1-unsigned.apk > SHA256SUMS-v1.5.1-unsigned.txt
+          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release-unsigned.apk | grep "package: name='au.com.t1xperts.mailxperts' versionCode='12' versionName='1.5.2'"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MailXperts-v1.5.2-unsigned.apk
+          sha256sum MailXperts-v1.5.2-unsigned.apk > SHA256SUMS-v1.5.2-unsigned.txt
 
       - name: Upload unsigned release fallback
         if: steps.signing.outputs.available != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: MailXperts-v1.5.1-unsigned-release
+          name: MailXperts-v1.5.2-unsigned-release
           path: |
-            MailXperts-v1.5.1-unsigned.apk
-            SHA256SUMS-v1.5.1-unsigned.txt
+            MailXperts-v1.5.2-unsigned.apk
+            SHA256SUMS-v1.5.2-unsigned.txt
           if-no-files-found: error
           retention-days: 7
