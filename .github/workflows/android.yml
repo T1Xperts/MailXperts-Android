@@ -28,28 +28,46 @@ jobs:
       - name: Install Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          version_name=$(sed -n "s/^[[:space:]]*versionName[[:space:]]*'\([^']*\)'.*/\1/p" app/build.gradle | head -1)
+          version_code=$(sed -n "s/^[[:space:]]*versionCode[[:space:]]*\([0-9][0-9]*\).*/\1/p" app/build.gradle | head -1)
+          [[ -n "$version_name" && -n "$version_code" ]] || { echo "Unable to read Android version" >&2; exit 1; }
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+
       - name: Validate and build development APK
         run: ./gradlew --no-daemon --stacktrace clean lintDebug testDebugUnitTest assembleDebug
+
       - name: Verify, name and checksum APK
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
+          set -euo pipefail
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          cp app/build/outputs/apk/debug/app-debug.apk MailXperts-v1.5.2-debug.apk
-          "$build_tools/apksigner" verify --verbose --print-certs MailXperts-v1.5.2-debug.apk
-          "$build_tools/aapt" dump badging MailXperts-v1.5.2-debug.apk | grep -F "package: name='au.com.t1xperts.mailxperts.dev' versionCode='12' versionName='1.5.2-dev'"
-          sha256sum MailXperts-v1.5.2-debug.apk > SHA256SUMS-v1.5.2-debug.txt
+          apk="MailXperts-v${VERSION_NAME}-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$apk"
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk"
+          "$build_tools/aapt" dump badging "$apk" | grep -F "package: name='au.com.t1xperts.mailxperts.dev' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}-dev'"
+          sha256sum "$apk" > "SHA256SUMS-v${VERSION_NAME}-debug.txt"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: MailXperts-v1.5.2-debug-apk
+          name: MailXperts-v${{ steps.version.outputs.name }}-debug-apk
           path: |
-            MailXperts-v1.5.2-debug.apk
-            SHA256SUMS-v1.5.2-debug.txt
+            MailXperts-v${{ steps.version.outputs.name }}-debug.apk
+            SHA256SUMS-v${{ steps.version.outputs.name }}-debug.txt
           if-no-files-found: error
           retention-days: 30
 
   signed-release:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release v1.5.2]'))
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -63,90 +81,143 @@ jobs:
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Detect and restore release signing material
+      - name: Read and validate release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_name=$(sed -n "s/^[[:space:]]*versionName[[:space:]]*'\([^']*\)'.*/\1/p" app/build.gradle | head -1)
+          version_code=$(sed -n "s/^[[:space:]]*versionCode[[:space:]]*\([0-9][0-9]*\).*/\1/p" app/build.gradle | head -1)
+          [[ -n "$version_name" && -n "$version_code" ]] || { echo "Unable to read Android version" >&2; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v${version_name}" ]]; then
+            echo "Tag/version mismatch: tag=$GITHUB_REF_NAME, app=v${version_name}" >&2
+            exit 1
+          fi
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+
+      - name: Restore and verify permanent production signing key
         id: signing
+        shell: bash
         env:
           MX_KEYSTORE_BASE64: ${{ secrets.MX_KEYSTORE_BASE64 }}
           MX_KEYSTORE_PASSWORD: ${{ secrets.MX_KEYSTORE_PASSWORD }}
           MX_KEY_ALIAS: ${{ secrets.MX_KEY_ALIAS }}
           MX_KEY_PASSWORD: ${{ secrets.MX_KEY_PASSWORD }}
+          EXPECTED_CERT_SHA256: 748E111195284B12C99DC3A011F758ADC1B20AEDFEDFDDEC83680D5D13746EEC
         run: |
-          if [[ -n "$MX_KEYSTORE_BASE64" && -n "$MX_KEYSTORE_PASSWORD" && -n "$MX_KEY_ALIAS" && -n "$MX_KEY_PASSWORD" ]]; then
-            printf '%s' "$MX_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mailxperts-release.p12"
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Release signing secrets are not configured. Building a non-distributable unsigned release artifact for secure offline signing."
+          set -euo pipefail
+          for secret_name in MX_KEYSTORE_BASE64 MX_KEYSTORE_PASSWORD MX_KEY_ALIAS MX_KEY_PASSWORD; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "Required production signing secret is missing: ${secret_name}" >&2
+              exit 20
+            fi
+          done
+
+          keystore="$RUNNER_TEMP/mailxperts-release.p12"
+          printf '%s' "$MX_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+
+          actual=$(LC_ALL=C keytool -list -v \
+            -storetype PKCS12 \
+            -keystore "$keystore" \
+            -storepass "$MX_KEYSTORE_PASSWORD" \
+            -alias "$MX_KEY_ALIAS" \
+            | awk -F': ' '/SHA256:/{gsub(":", "", $2); print toupper($2); exit}')
+
+          if [[ -z "$actual" ]]; then
+            echo "Unable to read signing certificate SHA-256 from restored keystore." >&2
+            exit 21
+          fi
+          if [[ "$actual" != "$EXPECTED_CERT_SHA256" ]]; then
+            echo "Production signing certificate mismatch. Release blocked." >&2
+            echo "Expected: $EXPECTED_CERT_SHA256" >&2
+            echo "Actual:   $actual" >&2
+            exit 22
           fi
 
+          echo "keystore=$keystore" >> "$GITHUB_OUTPUT"
+          echo "certificate=$actual" >> "$GITHUB_OUTPUT"
+          echo "Permanent MailXperts production signing certificate verified."
+
       - name: Build signed release APK and Android App Bundle
-        if: steps.signing.outputs.available == 'true'
         env:
-          MX_KEYSTORE_FILE: ${{ runner.temp }}/mailxperts-release.p12
+          MX_KEYSTORE_FILE: ${{ steps.signing.outputs.keystore }}
           MX_KEYSTORE_PASSWORD: ${{ secrets.MX_KEYSTORE_PASSWORD }}
           MX_KEY_ALIAS: ${{ secrets.MX_KEY_ALIAS }}
           MX_KEY_PASSWORD: ${{ secrets.MX_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon clean lintRelease testDebugUnitTest assembleRelease bundleRelease
+        run: ./gradlew --no-daemon --stacktrace clean lintRelease testDebugUnitTest assembleRelease bundleRelease
 
-      - name: Verify signed release signature, version and checksums
-        if: steps.signing.outputs.available == 'true'
+      - name: Verify signed release identity, version and integrity
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          EXPECTED_CERT_SHA256: 748E111195284B12C99DC3A011F758ADC1B20AEDFEDFDDEC83680D5D13746EEC
         run: |
+          set -euo pipefail
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          "$build_tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
-          jarsigner -verify -strict app/build/outputs/bundle/release/app-release.aab
-          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release.apk | grep "versionCode='12' versionName='1.5.2'"
-          cp app/build/outputs/apk/release/app-release.apk MailXperts-v1.5.2.apk
-          cp app/build/outputs/bundle/release/app-release.aab MailXperts-v1.5.2.aab
-          sha256sum MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab > SHA256SUMS-v1.5.2.txt
+          source_apk="app/build/outputs/apk/release/app-release.apk"
+          source_aab="app/build/outputs/bundle/release/app-release.aab"
+          apk="MailXperts-v${VERSION_NAME}.apk"
+          aab="MailXperts-v${VERSION_NAME}.aab"
 
-      - name: Upload signed release artifact
-        if: steps.signing.outputs.available == 'true'
+          verify_output=$("$build_tools/apksigner" verify --verbose --print-certs "$source_apk")
+          printf '%s\n' "$verify_output"
+          apk_cert=$(printf '%s\n' "$verify_output" | awk -F': ' '/certificate SHA-256 digest/{gsub(":", "", $2); print toupper($2); exit}')
+          if [[ "$apk_cert" != "$EXPECTED_CERT_SHA256" ]]; then
+            echo "Signed APK certificate mismatch. Release blocked." >&2
+            exit 30
+          fi
+
+          jarsigner -verify -strict "$source_aab"
+          "$build_tools/aapt" dump badging "$source_apk" | grep -F "package: name='au.com.t1xperts.mailxperts' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'"
+
+          cp "$source_apk" "$apk"
+          cp "$source_aab" "$aab"
+          printf '%s\n' "$EXPECTED_CERT_SHA256" > "SIGNING-CERT-SHA256-v${VERSION_NAME}.txt"
+          sha256sum "$apk" "$aab" > "SHA256SUMS-v${VERSION_NAME}.txt"
+          cat > "BUILD-METADATA-v${VERSION_NAME}.txt" <<EOF
+          MailXperts versionName=${VERSION_NAME}
+          versionCode=${VERSION_CODE}
+          package=au.com.t1xperts.mailxperts
+          commit=${GITHUB_SHA}
+          workflow_run=${GITHUB_RUN_ID}
+          signing_certificate_sha256=${EXPECTED_CERT_SHA256}
+          EOF
+
+      - name: Upload signed production release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MailXperts-v1.5.2-signed-release
+          name: MailXperts-v${{ steps.version.outputs.name }}-signed-release
           path: |
-            MailXperts-v1.5.2.apk
-            MailXperts-v1.5.2.aab
-            SHA256SUMS-v1.5.2.txt
+            MailXperts-v${{ steps.version.outputs.name }}.apk
+            MailXperts-v${{ steps.version.outputs.name }}.aab
+            SHA256SUMS-v${{ steps.version.outputs.name }}.txt
+            SIGNING-CERT-SHA256-v${{ steps.version.outputs.name }}.txt
+            BUILD-METADATA-v${{ steps.version.outputs.name }}.txt
           if-no-files-found: error
+          retention-days: 90
 
-      - name: Publish v1.5.2 GitHub release
-        if: steps.signing.outputs.available == 'true' && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+      - name: Publish GitHub production release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            tag="$GITHUB_REF_NAME"
-          else
-            tag="v1.5.2"
-          fi
+          set -euo pipefail
+          tag="v${VERSION_NAME}"
+          files=(
+            "MailXperts-v${VERSION_NAME}.apk"
+            "MailXperts-v${VERSION_NAME}.aab"
+            "SHA256SUMS-v${VERSION_NAME}.txt"
+            "SIGNING-CERT-SHA256-v${VERSION_NAME}.txt"
+            "BUILD-METADATA-v${VERSION_NAME}.txt"
+          )
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab SHA256SUMS-v1.5.2.txt --clobber
+            gh release upload "$tag" "${files[@]}" --clobber
           else
-            gh release create "$tag" MailXperts-v1.5.2.apk MailXperts-v1.5.2.aab SHA256SUMS-v1.5.2.txt --target "$GITHUB_SHA" --title "MailXperts v1.5.2" --generate-notes
+            gh release create "$tag" "${files[@]}" --target "$GITHUB_SHA" --title "MailXperts v${VERSION_NAME}" --generate-notes
           fi
 
-      - name: Build unsigned release fallback
-        if: steps.signing.outputs.available != 'true'
-        env:
-          MX_ALLOW_UNSIGNED_RELEASE: 'true'
-        run: ./gradlew --no-daemon clean lintRelease testDebugUnitTest assembleRelease
-
-      - name: Verify and package unsigned release fallback
-        if: steps.signing.outputs.available != 'true'
-        run: |
-          build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          "$build_tools/aapt" dump badging app/build/outputs/apk/release/app-release-unsigned.apk | grep "package: name='au.com.t1xperts.mailxperts' versionCode='12' versionName='1.5.2'"
-          cp app/build/outputs/apk/release/app-release-unsigned.apk MailXperts-v1.5.2-unsigned.apk
-          sha256sum MailXperts-v1.5.2-unsigned.apk > SHA256SUMS-v1.5.2-unsigned.txt
-
-      - name: Upload unsigned release fallback
-        if: steps.signing.outputs.available != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: MailXperts-v1.5.2-unsigned-release
-          path: |
-            MailXperts-v1.5.2-unsigned.apk
-            SHA256SUMS-v1.5.2-unsigned.txt
-          if-no-files-found: error
-          retention-days: 7
+      - name: Remove restored keystore from runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/mailxperts-release.p12"
