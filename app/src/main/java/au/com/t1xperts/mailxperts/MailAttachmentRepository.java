@@ -209,6 +209,19 @@ final class MailAttachmentRepository {
                                             String to, String cc, String bcc,
                                             String subject, String html,
                                             List<AttachmentRef> attachments) throws Exception {
+        String plainText = android.text.Html.fromHtml(html == null ? "" : html,
+                android.text.Html.FROM_HTML_MODE_LEGACY).toString();
+        return buildMessage(session, account, to, cc, bcc, subject, html, plainText, attachments);
+    }
+
+    /**
+     * Package-visible MIME builder used by JVM QA tests as well as the Android wrapper above.
+     * Keeping the MIME assembly pure Java lets CI inspect the exact outgoing multipart structure.
+     */
+    static MimeMessage buildMessage(Session session, AccountConfig account,
+                                    String to, String cc, String bcc,
+                                    String subject, String html, String plainText,
+                                    List<AttachmentRef> attachments) throws Exception {
         MimeMessage message = new MimeMessage(session);
         message.setFrom(new InternetAddress(account.email));
         addRecipients(message, Message.RecipientType.TO, to);
@@ -219,8 +232,7 @@ final class MailAttachmentRepository {
 
         MimeMultipart alternative = new MimeMultipart("alternative");
         MimeBodyPart plain = new MimeBodyPart();
-        plain.setText(android.text.Html.fromHtml(html == null ? "" : html,
-                android.text.Html.FROM_HTML_MODE_LEGACY).toString(), "UTF-8");
+        plain.setText(plainText == null ? "" : plainText, "UTF-8");
         alternative.addBodyPart(plain);
         MimeBodyPart rich = new MimeBodyPart();
         rich.setContent(html == null ? "" : html, "text/html; charset=UTF-8");
