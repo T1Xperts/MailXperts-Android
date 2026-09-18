@@ -299,8 +299,8 @@ final class MailAttachmentRepository {
         return new IncomingAttachment(index, name, mime, Math.max(0, part.getSize()));
     }
 
-    private static void collectAttachmentParts(Part part, List<Part> out) throws Exception {
-        if (isAttachment(part)) {
+    static void collectAttachmentParts(Part part, List<Part> out) throws Exception {
+        if (MimePartClassifier.isAttachment(part)) {
             out.add(part);
             return;
         }
@@ -312,11 +312,8 @@ final class MailAttachmentRepository {
         }
     }
 
-    private static boolean isAttachment(Part part) throws MessagingException {
-        String disposition = part.getDisposition();
-        if (Part.ATTACHMENT.equalsIgnoreCase(disposition)) return true;
-        String name = part.getFileName();
-        return name != null && !name.trim().isEmpty();
+    static boolean isAttachment(Part part) throws MessagingException {
+        return MimePartClassifier.isAttachment(part);
     }
 
     private static Session smtpSession(AccountConfig account) {
