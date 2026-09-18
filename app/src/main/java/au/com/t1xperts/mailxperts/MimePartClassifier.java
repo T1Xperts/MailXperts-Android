@@ -40,10 +40,10 @@ final class MimePartClassifier {
         if (value == null) return "";
         String out = value.trim();
         if (out.regionMatches(true, 0, "cid:", 0, 4)) out = out.substring(4).trim();
-        while (out.startsWith("<") || out.startsWith(""") || out.startsWith("'")) {
+        while (out.startsWith("<") || out.startsWith("\\\"") || out.startsWith("'")) {
             out = out.substring(1).trim();
         }
-        while (out.endsWith(">") || out.endsWith(""") || out.endsWith("'")) {
+        while (out.endsWith(">") || out.endsWith("\\\"") || out.endsWith("'")) {
             out = out.substring(0, out.length() - 1).trim();
         }
         return out.toLowerCase(java.util.Locale.ROOT);
