@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Legacy HTML email bodies can reference http:// images. Mail transport itself remains
+         IMAPS/SMTPS, while MessageActivity disables JavaScript, file/content access and storage. -->
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -12,7 +14,7 @@
         android:label="MailXperts"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Dark"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
