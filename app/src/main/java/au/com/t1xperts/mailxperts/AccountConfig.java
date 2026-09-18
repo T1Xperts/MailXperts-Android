@@ -8,9 +8,11 @@ final class AccountConfig {
 
     String id = UUID.randomUUID().toString();
     String provider = ProviderPreset.T1XPERTS;
-    String label = "T1Xperts Customer Care";
-    String email = "customer.care@t1xperts.com.au";
-    String username = "customer.care@t1xperts.com.au";
+    // Account identity must never be pre-populated for a newly-created account.
+    // Existing accounts are restored only from SecureStore when an explicit account ID is edited.
+    String label = "";
+    String email = "";
+    String username = "";
     String imapHost = "t1xperts.com.au";
     int imapPort = 993;
     String smtpHost = "t1xperts.com.au";

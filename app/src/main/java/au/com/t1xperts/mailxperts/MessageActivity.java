@@ -115,11 +115,18 @@ public class MessageActivity extends Activity {
         settings.setJavaScriptEnabled(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        settings.setDomStorageEnabled(false);
+        settings.setDatabaseEnabled(false);
+        settings.setGeolocationEnabled(false);
+        settings.setSaveFormData(false);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+        settings.setSafeBrowsingEnabled(true);
         // Remote HTML images (such as company logos and newsletters) must be allowed
         // to load; otherwise WebView renders each external image as a broken placeholder.
-        // JavaScript and local file/content access remain disabled above.
+        // JavaScript, local file/content access and persistent web storage remain disabled.
         settings.setBlockNetworkLoads(false);
         // Permit legacy HTTP image sources as well as HTTPS sources in an HTML email.
+        // Main-frame navigation still leaves the WebView through the explicit safe-scheme policy.
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         body.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -402,6 +409,10 @@ public class MessageActivity extends Activity {
     private boolean openExternalLink(Uri uri) {
         if (uri == null) return true;
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        if (!ExternalLinkPolicy.isAllowedScheme(scheme)) {
+            Toast.makeText(this, "Blocked unsupported link type.", Toast.LENGTH_SHORT).show();
+            return true;
+        }
         Intent intent;
         if ("http".equals(scheme) || "https".equals(scheme)) {
             intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -410,6 +421,7 @@ public class MessageActivity extends Activity {
         } else if ("tel".equals(scheme) || "sms".equals(scheme) || "geo".equals(scheme)) {
             intent = new Intent(Intent.ACTION_VIEW, uri);
         } else {
+            // The allow-list above makes this branch unreachable; keep a safe default.
             Toast.makeText(this, "Blocked unsupported link type.", Toast.LENGTH_SHORT).show();
             return true;
         }

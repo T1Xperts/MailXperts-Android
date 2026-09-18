@@ -1,0 +1,80 @@
+name: P0 QA and APK Build
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+
+permissions:
+  contents: read
+
+jobs:
+  p0-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run P0 QA suite and build APKs
+        run: |
+          chmod +x scripts/qa-p0.sh
+          scripts/qa-p0.sh
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          version_name=$(sed -n "s/^[[:space:]]*versionName[[:space:]]*'\([^']*\)'.*/\1/p" app/build.gradle | head -1)
+          version_code=$(sed -n "s/^[[:space:]]*versionCode[[:space:]]*\([0-9][0-9]*\).*/\1/p" app/build.gradle | head -1)
+          [[ -n "$version_name" && -n "$version_code" ]]
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+
+      - name: Verify APK identities
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          set -euo pipefail
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          debug="app/build/outputs/apk/debug/app-debug.apk"
+          release="app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          "$build_tools/apksigner" verify --verbose --print-certs "$debug"
+          "$build_tools/aapt" dump badging "$debug" | grep -F "package: name='au.com.t1xperts.mailxperts.dev' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}-dev'"
+          "$build_tools/aapt" dump badging "$release" | grep -F "package: name='au.com.t1xperts.mailxperts' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'"
+
+          cp "$debug" "MailXperts-v${VERSION_NAME}-P0-QA-debug.apk"
+          cp "$release" "MailXperts-v${VERSION_NAME}-P0-QA-unsigned.apk"
+          sha256sum "MailXperts-v${VERSION_NAME}-P0-QA-debug.apk"                     "MailXperts-v${VERSION_NAME}-P0-QA-unsigned.apk"                     > "SHA256SUMS-v${VERSION_NAME}-P0-QA.txt"
+
+      - name: Upload P0 QA evidence and APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: MailXperts-v${{ steps.version.outputs.name }}-P0-QA
+          path: |
+            MailXperts-v${{ steps.version.outputs.name }}-P0-QA-debug.apk
+            MailXperts-v${{ steps.version.outputs.name }}-P0-QA-unsigned.apk
+            SHA256SUMS-v${{ steps.version.outputs.name }}-P0-QA.txt
+            build/p0-qa/P0-QA-RESULTS.md
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+          retention-days: 30
