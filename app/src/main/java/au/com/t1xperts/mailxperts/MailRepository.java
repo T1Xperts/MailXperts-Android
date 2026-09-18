@@ -875,39 +875,7 @@ final class MailRepository {
     }
 
     private static String extractBestBody(Part part) throws Exception {
-        if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()) || part.getFileName() != null) return "";
-        if (part.isMimeType("text/html")) {
-            Object content = part.getContent();
-            return content == null ? "" : content.toString();
-        }
-        if (part.isMimeType("text/plain")) {
-            Object content = part.getContent();
-            String plain = content == null ? "" : content.toString();
-            return "<div style='white-space:pre-wrap'>" + TextUtils.htmlEncode(plain) + "</div>";
-        }
-        if (part.isMimeType("multipart/alternative")) {
-            Multipart multipart = (Multipart) part.getContent();
-            String fallback = "";
-            for (int i = 0; i < multipart.getCount(); i++) {
-                Part child = multipart.getBodyPart(i);
-                if (child.isMimeType("text/html")) return extractBestBody(child);
-                if (fallback.isEmpty() && child.isMimeType("text/plain")) fallback = extractBestBody(child);
-            }
-            return fallback;
-        }
-        if (part.isMimeType("multipart/*")) {
-            Multipart multipart = (Multipart) part.getContent();
-            StringBuilder out = new StringBuilder();
-            for (int i = 0; i < multipart.getCount(); i++) {
-                String child = extractBestBody(multipart.getBodyPart(i));
-                if (!child.isEmpty()) {
-                    if (out.length() > 0) out.append("<hr>");
-                    out.append(child);
-                }
-            }
-            return out.toString();
-        }
-        return "";
+        return MimeMessageRenderer.render(part);
     }
 
     private static String toPlainText(String html) {
