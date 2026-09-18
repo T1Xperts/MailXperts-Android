@@ -115,8 +115,12 @@ public class MessageActivity extends Activity {
         settings.setJavaScriptEnabled(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        settings.setBlockNetworkLoads(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        // Remote HTML images (such as company logos and newsletters) must be allowed
+        // to load; otherwise WebView renders each external image as a broken placeholder.
+        // JavaScript and local file/content access remain disabled above.
+        settings.setBlockNetworkLoads(false);
+        // Permit legacy HTTP image sources as well as HTTPS sources in an HTML email.
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         body.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return openExternalLink(request == null ? null : request.getUrl());
