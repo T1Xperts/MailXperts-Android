@@ -71,7 +71,9 @@ final class MailSearchSpec {
 
     List<String> localFolders() {
         ArrayList<String> out = new ArrayList<>();
-        if (SCOPE_DRAFTS.equals(folderScope)) out.add(LocalStore.DRAFT);
+        if (SCOPE_CURRENT.equals(folderScope)) {
+            if (isLocalFolder(currentFolder)) out.add(currentFolder);
+        } else if (SCOPE_DRAFTS.equals(folderScope)) out.add(LocalStore.DRAFT);
         else if (SCOPE_OUTBOX.equals(folderScope)) out.add(LocalStore.OUTBOX);
         else if (SCOPE_SCHEDULED.equals(folderScope)) out.add(LocalStore.SCHEDULED);
         else if (SCOPE_ALL.equals(folderScope)) {
@@ -155,6 +157,12 @@ final class MailSearchSpec {
                 .trim();
     }
 
+
+    private static boolean isLocalFolder(String folder) {
+        return LocalStore.DRAFT.equals(folder)
+                || LocalStore.OUTBOX.equals(folder)
+                || LocalStore.SCHEDULED.equals(folder);
+    }
 
     private static boolean isServerFolder(String folder) {
         return MailRepository.INBOX.equals(folder)
