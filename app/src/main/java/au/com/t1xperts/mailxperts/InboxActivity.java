@@ -8,11 +8,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +35,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class InboxActivity extends Activity {
+    private static final int CHOICE_ALL = 0;
+    private static final int CHOICE_ACCOUNT = 1;
+    private static final int CHOICE_ADD = 2;
+    private static final int CHOICE_MANAGE = 3;
     private static final int MAX_PARALLEL_ACCOUNTS = 3;
     private static final long PROGRESS_RENDER_THROTTLE_MS = 200L;
 
@@ -51,6 +58,7 @@ public class InboxActivity extends Activity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private AccountConfig account;
+    private SecureStore secureStore;
     private String accountId;
     private String kind;
     private boolean allAccounts;
@@ -85,8 +93,8 @@ public class InboxActivity extends Activity {
         if (kind == null) kind = MailRepository.INBOX;
         smartOnly = getIntent().getBooleanExtra("smart_only", false);
 
-        SecureStore store = new SecureStore(this);
-        List<AccountConfig> usable = MailboxScope.usable(store);
+        secureStore = new SecureStore(this);
+        List<AccountConfig> usable = MailboxScope.usable(secureStore);
         allAccounts = MailboxScope.isAll(accountId);
         if (allAccounts) {
             accounts.addAll(usable);
@@ -157,9 +165,12 @@ public class InboxActivity extends Activity {
                 : MailRepository.SENT.equals(kind) ? "Sent"
                 : MailRepository.JUNK.equals(kind) ? "Spam / Junk" : "Inbox";
         TextView title = Ui.title(this, allAccounts ? "Unified " + base : base);
-        title.setPadding(Ui.dp(this, 10), 0, 0, 0);
+        title.setPadding(Ui.dp(this, 10), 0, Ui.dp(this, 6), 0);
         header.addView(title,
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Spinner switcher = accountSpinner();
+        header.addView(switcher,
+                new LinearLayout.LayoutParams(Ui.dp(this, 154), Ui.dp(this, 48)));
         Button compose = Ui.compactButton(this, "✎");
         compose.setContentDescription("Compose email");
         compose.setOnClickListener(v -> {
@@ -170,6 +181,89 @@ public class InboxActivity extends Activity {
         header.addView(compose,
                 new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 48)));
         return header;
+    }
+
+    private Spinner accountSpinner() {
+        ArrayList<AccountChoice> choices = new ArrayList<>();
+        choices.add(new AccountChoice(CHOICE_ALL, null, "All Accounts"));
+        int selectedIndex = allAccounts ? 0 : 1;
+        for (int i = 0; i < accounts.size(); i++) {
+            AccountConfig configured = accounts.get(i);
+            choices.add(new AccountChoice(CHOICE_ACCOUNT, configured, configured.displayName()));
+            if (!allAccounts && configured.id.equals(accountId)) selectedIndex = i + 1;
+        }
+        choices.add(new AccountChoice(CHOICE_ADD, null, "＋ Add account"));
+        choices.add(new AccountChoice(CHOICE_MANAGE, null, "Manage accounts"));
+        final int activeIndex = selectedIndex;
+
+        ArrayAdapter<AccountChoice> adapter = new ArrayAdapter<AccountChoice>(
+                this, android.R.layout.simple_spinner_item, choices) {
+            private TextView decorate(View view, boolean dropdown) {
+                TextView text = (TextView) view;
+                text.setTextColor(Ui.textColor(InboxActivity.this));
+                text.setTextSize(dropdown ? 15 : 12);
+                text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                int vertical = dropdown ? Ui.dp(InboxActivity.this, 14) : 0;
+                text.setPadding(Ui.dp(InboxActivity.this, 8), vertical,
+                        Ui.dp(InboxActivity.this, 8), vertical);
+                if (dropdown) text.setBackgroundColor(Ui.panel(InboxActivity.this));
+                return text;
+            }
+            @Override public View getView(int position, View convertView, ViewGroup parent) {
+                return decorate(super.getView(position, convertView, parent), false);
+            }
+            @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                return decorate(super.getDropDownView(position, convertView, parent), true);
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Spinner spinner = new Spinner(this);
+        spinner.setAdapter(adapter);
+        spinner.setSelection(selectedIndex, false);
+        final boolean[] ready = {false};
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!ready[0]) return;
+                AccountChoice choice = choices.get(position);
+                if (choice.type == CHOICE_ADD) {
+                    spinner.setSelection(activeIndex, false);
+                    startActivity(new Intent(InboxActivity.this, SettingsActivity.class));
+                    return;
+                }
+                if (choice.type == CHOICE_MANAGE) {
+                    spinner.setSelection(activeIndex, false);
+                    startActivity(new Intent(InboxActivity.this, AccountsActivity.class));
+                    return;
+                }
+                String destination = choice.type == CHOICE_ALL
+                        ? MailboxScope.ALL_ACCOUNTS : choice.account.id;
+                if (destination.equals(accountId)) return;
+                secureStore.setSelectedId(destination);
+                Intent intent = new Intent(InboxActivity.this, InboxActivity.class);
+                intent.putExtra("account_id", destination);
+                intent.putExtra("folder_kind", kind);
+                intent.putExtra("smart_only", smartOnly);
+                startActivity(intent);
+                finish();
+            }
+        });
+        spinner.post(() -> ready[0] = true);
+        return spinner;
+    }
+
+    private static final class AccountChoice {
+        final int type;
+        final AccountConfig account;
+        final String label;
+
+        AccountChoice(int type, AccountConfig account, String label) {
+            this.type = type;
+            this.account = account;
+            this.label = label;
+        }
+
+        @Override public String toString() { return label; }
     }
 
     private void startSync(boolean loadOlder, boolean force) {
