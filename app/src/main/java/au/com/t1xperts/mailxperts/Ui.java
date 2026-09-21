@@ -15,6 +15,7 @@ import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
 
 final class Ui {
@@ -151,6 +152,28 @@ final class Ui {
         edit.setPadding(dp(context, 12), dp(context, 11), dp(context, 12), dp(context, 11));
         edit.setBackground(rounded(panel(context), Color.parseColor(ThemeManager.isDark(context) ? "#31535A" : "#B7D6D8"), 1, 12, context));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(context, 8));
+        edit.setLayoutParams(params);
+        return edit;
+    }
+
+    static MultiAutoCompleteTextView recipientEdit(Context context, String hint) {
+        MultiAutoCompleteTextView edit = new MultiAutoCompleteTextView(context);
+        edit.setHint(hint);
+        edit.setHintTextColor(muted(context));
+        edit.setTextColor(textColor(context));
+        edit.setTextSize(16);
+        edit.setSingleLine(true);
+        edit.setThreshold(1);
+        edit.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+        edit.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        edit.setPadding(dp(context, 12), dp(context, 11), dp(context, 12), dp(context, 11));
+        edit.setBackground(rounded(panel(context),
+                Color.parseColor(ThemeManager.isDark(context) ? "#31535A" : "#B7D6D8"),
+                1, 12, context));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, dp(context, 8));
         edit.setLayoutParams(params);
         return edit;
