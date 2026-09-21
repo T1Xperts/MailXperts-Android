@@ -171,6 +171,16 @@ public class InboxActivity extends Activity {
         Spinner switcher = accountSpinner();
         header.addView(switcher,
                 new LinearLayout.LayoutParams(Ui.dp(this, 154), Ui.dp(this, 48)));
+        Button search = Ui.compactButton(this, "⌕");
+        search.setContentDescription("Search this mailbox");
+        search.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SearchActivity.class);
+            intent.putExtra("account_id", accountId);
+            intent.putExtra("folder_kind", kind);
+            startActivity(intent);
+        });
+        header.addView(search,
+                new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
         Button compose = Ui.compactButton(this, "✎");
         compose.setContentDescription("Compose email");
         compose.setOnClickListener(v -> {
@@ -187,8 +197,9 @@ public class InboxActivity extends Activity {
         ArrayList<AccountChoice> choices = new ArrayList<>();
         choices.add(new AccountChoice(CHOICE_ALL, null, "All Accounts"));
         int selectedIndex = allAccounts ? 0 : 1;
-        for (int i = 0; i < accounts.size(); i++) {
-            AccountConfig configured = accounts.get(i);
+        List<AccountConfig> switchAccounts = MailboxScope.usable(secureStore);
+        for (int i = 0; i < switchAccounts.size(); i++) {
+            AccountConfig configured = switchAccounts.get(i);
             choices.add(new AccountChoice(CHOICE_ACCOUNT, configured, configured.displayName()));
             if (!allAccounts && configured.id.equals(accountId)) selectedIndex = i + 1;
         }
