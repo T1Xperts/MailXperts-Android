@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.mail.Address;
+import javax.mail.AuthenticationFailedException;
 import javax.mail.Authenticator;
 import javax.mail.FetchProfile;
 import javax.mail.Flags;
@@ -665,17 +666,38 @@ final class MailRepository {
         try {
             store = imap.getStore("imaps");
             store.connect(account.imapHost, account.imapPort, account.username, account.password);
+        } catch (AuthenticationFailedException error) {
+            throw connectionFailure(account, "IMAP", true, error);
+        } catch (Exception error) {
+            throw connectionFailure(account, "IMAP", false, error);
         } finally {
             if (store != null && store.isConnected()) store.close();
         }
+
         Session smtp = smtpSession(account);
         Transport transport = null;
         try {
             transport = smtp.getTransport("smtp");
             transport.connect(account.smtpHost, account.smtpPort, account.username, account.password);
+        } catch (AuthenticationFailedException error) {
+            throw connectionFailure(account, "SMTP", true, error);
+        } catch (Exception error) {
+            throw connectionFailure(account, "SMTP", false, error);
         } finally {
             if (transport != null && transport.isConnected()) transport.close();
         }
+    }
+
+    private static MessagingException connectionFailure(
+            AccountConfig account, String stage, boolean authentication, Exception error) {
+        if (authentication && ProviderPreset.GMAIL.equals(account.provider)) {
+            return new MessagingException(stage + " authentication failed. Gmail rejected the "
+                    + "App Password. Use a current 16-character Google App Password generated "
+                    + "for this Google account; do not use the normal Google account password.",
+                    error);
+        }
+        String kind = authentication ? "authentication" : "connection";
+        return new MessagingException(stage + " " + kind + " failed: " + safe(error), error);
     }
 
     private static MimeMessage buildMessage(Session session, AccountConfig account, String to,
