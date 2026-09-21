@@ -110,7 +110,7 @@ public class MessageActivity extends Activity {
         progress = new ProgressBar(this);
         root.addView(progress);
         body = new WebView(this);
-        body.setBackgroundColor(Ui.background(this));
+        body.setBackgroundColor(android.graphics.Color.WHITE);
         WebSettings settings = body.getSettings();
         settings.setJavaScriptEnabled(false);
         settings.setAllowFileAccess(false);
@@ -641,16 +641,7 @@ public class MessageActivity extends Activity {
     }
 
     private String wrap(String html) {
-        boolean dark = ThemeManager.isDark(this);
-        String background = dark ? "#05090b" : "#fafcfd";
-        String text = dark ? "#f4ffff" : "#062a31";
-        String muted = dark ? "#a8b6ba" : "#527078";
-        String teal = dark ? "#00e6d2" : "#008f87";
-        return "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-                + "<style>body{background:" + background + ";color:" + text + ";font-family:sans-serif;line-height:1.45;padding:12px}"
-                + "a{color:" + teal + "}img{max-width:100%;height:auto}blockquote{border-left:3px solid " + teal
-                + ";padding-left:10px;color:" + muted + "}table{max-width:100%}</style></head><body>"
-                + (html == null ? "" : html) + "</body></html>";
+        return EmailHtmlPolicy.wrapForDisplay(html);
     }
 
     private String headerValue(String wanted) {
