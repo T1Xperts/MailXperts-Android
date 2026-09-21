@@ -230,17 +230,27 @@ final class MailAttachmentRepository {
         message.setSubject(subject == null ? "" : subject, "UTF-8");
         message.setSentDate(new Date());
 
+        InlineImageCid.Prepared prepared = InlineImageCid.prepare(html);
         MimeMultipart alternative = new MimeMultipart("alternative");
         MimeBodyPart plain = new MimeBodyPart();
         plain.setText(plainText == null ? "" : plainText, "UTF-8");
         alternative.addBodyPart(plain);
         MimeBodyPart rich = new MimeBodyPart();
-        rich.setContent(html == null ? "" : html, "text/html; charset=UTF-8");
+        rich.setContent(prepared.html, "text/html; charset=UTF-8");
         alternative.addBodyPart(rich);
 
         MimeMultipart mixed = new MimeMultipart("mixed");
         MimeBodyPart content = new MimeBodyPart();
-        content.setContent(alternative);
+        if (prepared.images.isEmpty()) {
+            content.setContent(alternative);
+        } else {
+            MimeMultipart related = new MimeMultipart("related");
+            MimeBodyPart relatedContent = new MimeBodyPart();
+            relatedContent.setContent(alternative);
+            related.addBodyPart(relatedContent);
+            InlineImageCid.addParts(related, prepared);
+            content.setContent(related);
+        }
         mixed.addBodyPart(content);
         for (AttachmentRef attachment : attachments) {
             MimeBodyPart part = new MimeBodyPart();
