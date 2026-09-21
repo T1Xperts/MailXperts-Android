@@ -47,7 +47,7 @@ final class ProviderPreset {
                     "Use the mailbox password supplied by the mail administrator.", false),
             new Definition(GMAIL, "Google Gmail", "imap.gmail.com", 993,
                     "smtp.gmail.com", 465, AccountConfig.SMTP_SSL,
-                    "Use a Google app password with 2-Step Verification. Sign in with Google/OAuth will be added after the T1Xperts Google client is registered.", false),
+                    "Use a Google 16-character App Password with 2-Step Verification. Spaces are removed automatically. Sign in with Google/OAuth will be added after the T1Xperts Google client is registered.", false),
             new Definition(YAHOO, "Yahoo Mail", "imap.mail.yahoo.com", 993,
                     "smtp.mail.yahoo.com", 465, AccountConfig.SMTP_SSL,
                     "Generate a Yahoo third-party app password, then enter it below.", false),
