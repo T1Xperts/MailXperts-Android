@@ -128,7 +128,7 @@ public class SettingsActivity extends Activity {
             }
         });
         password = Ui.password(this);
-        password.setHint("Password or provider app-specific password");
+        updatePasswordHint(ProviderPreset.find(current.provider));
         password.setText(current.password);
         identity.addView(password);
         root.addView(identity);
@@ -288,6 +288,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void applyPreset(ProviderPreset.Definition definition) {
+        updatePasswordHint(definition);
         if (!definition.imapHost.isEmpty()) imapHost.setText(definition.imapHost);
         imapPort.setText(String.valueOf(definition.imapPort));
         if (!definition.smtpHost.isEmpty()) smtpHost.setText(definition.smtpHost);
@@ -298,6 +299,13 @@ public class SettingsActivity extends Activity {
         }
         String address = email.getText().toString().trim();
         if (!address.isEmpty()) username.setText(address);
+    }
+
+    private void updatePasswordHint(ProviderPreset.Definition definition) {
+        boolean gmail = definition != null && ProviderPreset.GMAIL.equals(definition.id);
+        password.setHint(gmail
+                ? "Google 16-character App Password"
+                : "Password or provider app-specific password");
     }
 
     private LinearLayout buildHeader(String titleText) {
@@ -363,7 +371,10 @@ public class SettingsActivity extends Activity {
         account.label = label.getText().toString().trim();
         account.email = email.getText().toString().trim();
         account.username = username.getText().toString().trim();
-        account.password = password.getText().toString();
+        String rawPassword = password.getText().toString();
+        account.password = ProviderPreset.GMAIL.equals(account.provider)
+                ? GmailAppPassword.normalise(rawPassword)
+                : rawPassword;
         account.imapHost = imapHost.getText().toString().trim();
         account.smtpHost = smtpHost.getText().toString().trim();
         account.smtpSecurity = smtpSecurity.getSelectedItemPosition() == 1
@@ -390,6 +401,14 @@ public class SettingsActivity extends Activity {
         if (definition.oauthRequired) {
             status.setTextColor(Ui.error(this));
             status.setText("Outlook.com requires OAuth2/Modern Auth. The T1Xperts Microsoft app registration and redirect URI must be configured before Outlook sign-in can be enabled.");
+            return;
+        }
+        if (ProviderPreset.GMAIL.equals(account.provider)
+                && !GmailAppPassword.isValid(account.password)) {
+            status.setTextColor(Ui.error(this));
+            status.setText("Gmail requires a 16-character Google App Password in this version. "
+                    + "Enable 2-Step Verification, create an App Password, then paste it here. "
+                    + "Spaces are accepted and removed automatically.");
             return;
         }
         if (!account.isUsable()) {
