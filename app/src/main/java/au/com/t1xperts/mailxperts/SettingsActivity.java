@@ -289,6 +289,16 @@ public class SettingsActivity extends Activity {
         updateDeleteModeState();
         updateSignatureState();
         root.addView(preferences);
+        root.addView(Ui.secondaryButton(this, "Clear learned recipient suggestions", v ->
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Clear learned recipients?")
+                        .setMessage("This removes MailXperts' local autocomplete history from this device. It does not change Android contacts or server address books.")
+                        .setPositiveButton("Clear", (dialog, which) -> {
+                            new RecipientHistory(this).clear();
+                            Toast.makeText(this, "Learned recipient history cleared", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show()));
 
         status = Ui.text(this, "");
         status.setTextColor(Ui.muted(this));
