@@ -154,6 +154,9 @@ public class InboxActivity extends Activity {
     }
 
     private View buildHeader() {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -161,16 +164,17 @@ public class InboxActivity extends Activity {
         menu.setContentDescription("Open navigation menu");
         menu.setOnClickListener(v -> Navigation.show(this, menu, accountId));
         header.addView(menu, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 48)));
+
         String base = smartOnly ? "Smart Priority"
                 : MailRepository.SENT.equals(kind) ? "Sent"
                 : MailRepository.JUNK.equals(kind) ? "Spam / Junk" : "Inbox";
         TextView title = Ui.title(this, allAccounts ? "Unified " + base : base);
         title.setPadding(Ui.dp(this, 10), 0, Ui.dp(this, 6), 0);
+        title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         header.addView(title,
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        Spinner switcher = accountSpinner();
-        header.addView(switcher,
-                new LinearLayout.LayoutParams(Ui.dp(this, 154), Ui.dp(this, 48)));
+
         Button search = Ui.compactButton(this, "⌕");
         search.setContentDescription("Search this mailbox");
         search.setOnClickListener(v -> {
@@ -181,6 +185,7 @@ public class InboxActivity extends Activity {
         });
         header.addView(search,
                 new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+
         Button compose = Ui.compactButton(this, "✎");
         compose.setContentDescription("Compose email");
         compose.setOnClickListener(v -> {
@@ -190,7 +195,12 @@ public class InboxActivity extends Activity {
         });
         header.addView(compose,
                 new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 48)));
-        return header;
+        container.addView(header);
+
+        Spinner switcher = accountSpinner();
+        container.addView(switcher, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 48)));
+        return container;
     }
 
     private Spinner accountSpinner() {
