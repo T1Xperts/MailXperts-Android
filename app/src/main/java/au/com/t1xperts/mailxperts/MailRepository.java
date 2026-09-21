@@ -709,14 +709,24 @@ final class MailRepository {
         addRecipients(message, Message.RecipientType.BCC, bcc);
         message.setSubject(subject == null ? "" : subject, "UTF-8");
         message.setSentDate(new Date());
+        InlineImageCid.Prepared prepared = InlineImageCid.prepare(html);
         MimeMultipart alternative = new MimeMultipart("alternative");
         MimeBodyPart plain = new MimeBodyPart();
         plain.setText(toPlainText(html), "UTF-8");
         alternative.addBodyPart(plain);
         MimeBodyPart rich = new MimeBodyPart();
-        rich.setContent(html == null ? "" : html, "text/html; charset=UTF-8");
+        rich.setContent(prepared.html, "text/html; charset=UTF-8");
         alternative.addBodyPart(rich);
-        message.setContent(alternative);
+        if (prepared.images.isEmpty()) {
+            message.setContent(alternative);
+        } else {
+            MimeMultipart related = new MimeMultipart("related");
+            MimeBodyPart content = new MimeBodyPart();
+            content.setContent(alternative);
+            related.addBodyPart(content);
+            InlineImageCid.addParts(related, prepared);
+            message.setContent(related);
+        }
         message.saveChanges();
         return message;
     }
