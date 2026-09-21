@@ -690,11 +690,16 @@ final class MailRepository {
 
     private static MessagingException connectionFailure(
             AccountConfig account, String stage, boolean authentication, Exception error) {
-        if (authentication && ProviderPreset.GMAIL.equals(account.provider)) {
-            return new MessagingException(stage + " authentication failed. Gmail rejected the "
-                    + "App Password. Use a current 16-character Google App Password generated "
-                    + "for this Google account; do not use the normal Google account password.",
-                    error);
+        if (ProviderPreset.GMAIL.equals(account.provider)) {
+            if (authentication) {
+                return new MessagingException(stage + " authentication failed. Gmail rejected the "
+                        + "App Password. Use a current 16-character Google App Password generated "
+                        + "for this Google account; do not use the normal Google account password.",
+                        error);
+            }
+            return new MessagingException(stage + " connection failed. Check your internet "
+                    + "connection and try again. MailXperts is using Google's secure Gmail "
+                    + "server settings; no password or raw provider response is shown.", error);
         }
         String kind = authentication ? "authentication" : "connection";
         return new MessagingException(stage + " " + kind + " failed: " + safe(error), error);
