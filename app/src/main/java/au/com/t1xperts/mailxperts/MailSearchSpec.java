@@ -83,11 +83,14 @@ final class MailSearchSpec {
     }
 
     boolean matchesLocal(LocalStore.LocalMessage message) {
+        return matchesLocal(message, "");
+    }
+
+    boolean matchesLocal(LocalStore.LocalMessage message, String attachmentNames) {
         if (message == null) return false;
-        String haystack = (message.to + " " + message.cc + " " + message.bcc + " "
-                + message.subject + " " + android.text.Html.fromHtml(
-                message.html == null ? "" : message.html,
-                android.text.Html.FROM_HTML_MODE_LEGACY)).toLowerCase(Locale.ROOT);
+        String haystack = (safe(message.to) + " " + safe(message.cc) + " " + safe(message.bcc) + " "
+                + safe(message.subject) + " " + htmlText(message.html) + " "
+                + safe(attachmentNames)).toLowerCase(Locale.ROOT);
         if (MODE_EXACT.equals(mode)) {
             String exact = cleanToken(query).toLowerCase(Locale.ROOT);
             return !exact.isEmpty() && haystack.contains(exact);
@@ -130,6 +133,28 @@ final class MailSearchSpec {
                 new BodyTerm(value)
         });
     }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    /** Lightweight pure-Java HTML-to-searchable-text conversion for local JVM tests. */
+    private static String htmlText(String html) {
+        if (html == null || html.isEmpty()) return "";
+        return html
+                .replaceAll("(?is)<\\s*(script|style)\\b[^>]*>.*?<\\s*/\\s*\\1\\s*>", " ")
+                .replaceAll("(?s)<[^>]+>", " ")
+                .replace("&nbsp;", " ")
+                .replace("&#160;", " ")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
 
     private static boolean isServerFolder(String folder) {
         return MailRepository.INBOX.equals(folder)
