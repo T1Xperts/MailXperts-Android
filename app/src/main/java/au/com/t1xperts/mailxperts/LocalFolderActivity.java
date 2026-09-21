@@ -69,6 +69,15 @@ public class LocalFolderActivity extends Activity {
         TextView title = Ui.title(this, (allAccounts ? "Unified " : "") + title());
         title.setPadding(Ui.dp(this, 10), 0, 0, 0);
         header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Button search = Ui.compactButton(this, "⌕");
+        search.setContentDescription("Search this folder");
+        search.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SearchActivity.class);
+            intent.putExtra("account_id", accountId);
+            intent.putExtra("folder_kind", type);
+            startActivity(intent);
+        });
+        header.addView(search, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
         Button compose = Ui.compactButton(this, "✎");
         compose.setContentDescription("Compose email");
         compose.setOnClickListener(v -> {
