@@ -59,7 +59,9 @@ public class MessageActivity extends Activity {
     private Button replyAll;
     private Button forward;
     private Button overflow;
+    private Button details;
     private Button reminder;
+    private boolean detailsExpanded;
     private LinearLayout attachmentList;
     private MailRepository.FullMessage loaded;
     private MailIntelligence.Result intelligence;
@@ -96,6 +98,14 @@ public class MessageActivity extends Activity {
 
         header = Ui.text(this, "Loading…");
         root.addView(header);
+        details = Ui.compactButton(this, "Show message details");
+        details.setEnabled(false);
+        details.setOnClickListener(v -> {
+            detailsExpanded = !detailsExpanded;
+            renderMessageHeader();
+        });
+        root.addView(details, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 42)));
         smartStatus = Ui.text(this, "");
         smartStatus.setTextColor(Ui.teal(this));
         smartStatus.setVisibility(View.GONE);
@@ -110,7 +120,7 @@ public class MessageActivity extends Activity {
         progress = new ProgressBar(this);
         root.addView(progress);
         body = new WebView(this);
-        body.setBackgroundColor(Ui.background(this));
+        body.setBackgroundColor(android.graphics.Color.WHITE);
         WebSettings settings = body.getSettings();
         settings.setJavaScriptEnabled(false);
         settings.setAllowFileAccess(false);
@@ -185,9 +195,8 @@ public class MessageActivity extends Activity {
                     intelligence = result;
                     incomingAttachments = finalAttachments;
                     progress.setVisibility(View.GONE);
-                    String date = message.date == null ? "" : "\n" + DateFormat.getDateTimeInstance().format(message.date);
-                    header.setText((message.subject == null || message.subject.isEmpty() ? "(No subject)" : message.subject)
-                            + "\nFrom: " + message.from + "\nTo: " + message.to + date);
+                    renderMessageHeader();
+                    details.setEnabled(true);
                     reply.setEnabled(true);
                     replyAll.setEnabled(true);
                     forward.setEnabled(true);
@@ -209,15 +218,51 @@ public class MessageActivity extends Activity {
 
     private void showIntelligence(MailIntelligence.Result result) {
         if (result == null || result.label.isEmpty()) return;
-        String text = "★ Smart Priority: " + result.label + "\n" + result.explanation;
+        String text = "★ " + result.label;
+        if (result.explanation != null && !result.explanation.trim().isEmpty()) {
+            text += " • " + result.explanation.trim();
+        }
         if (result.hasDueDate()) {
-            text += "\nDetected date: " + DateFormat.getDateInstance(DateFormat.MEDIUM).format(new Date(result.dueAt));
+            text += " • " + DateFormat.getDateInstance(DateFormat.MEDIUM).format(new Date(result.dueAt));
             reminder.setVisibility(View.VISIBLE);
             reminder.setEnabled(true);
         }
         smartStatus.setText(text);
+        smartStatus.setMaxLines(2);
+        smartStatus.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        smartStatus.setTextSize(13);
         smartStatus.setTextColor(result.isOverdue() ? Ui.error(this) : Ui.teal(this));
         smartStatus.setVisibility(View.VISIBLE);
+    }
+
+    private void renderMessageHeader() {
+        if (loaded == null) return;
+        String subject = loaded.subject == null || loaded.subject.trim().isEmpty()
+                ? "(No subject)" : loaded.subject.trim();
+        StringBuilder text = new StringBuilder(subject)
+                .append("\nFrom: ").append(loaded.from == null ? "" : loaded.from)
+                .append("\nTo: ").append(loaded.to == null ? "" : loaded.to);
+        if (loaded.date != null) {
+            text.append("\n").append(DateFormat.getDateTimeInstance().format(loaded.date));
+        }
+        if (detailsExpanded) {
+            appendHeaderDetail(text, "Cc");
+            appendHeaderDetail(text, "Bcc");
+            appendHeaderDetail(text, "Reply-To");
+            appendHeaderDetail(text, "Message-ID");
+            text.append("\nAccount: ").append(account.displayName())
+                    .append(" <").append(account.email).append(">");
+            text.append("\nFolder: ").append(kind);
+        }
+        header.setText(text.toString());
+        if (details != null) {
+            details.setText(detailsExpanded ? "Hide message details" : "Show message details");
+        }
+    }
+
+    private void appendHeaderDetail(StringBuilder text, String name) {
+        String value = headerValue(name);
+        if (!value.isEmpty()) text.append("\n").append(name).append(": ").append(value);
     }
 
     private void showOverflow(View anchor) {
@@ -641,16 +686,7 @@ public class MessageActivity extends Activity {
     }
 
     private String wrap(String html) {
-        boolean dark = ThemeManager.isDark(this);
-        String background = dark ? "#05090b" : "#fafcfd";
-        String text = dark ? "#f4ffff" : "#062a31";
-        String muted = dark ? "#a8b6ba" : "#527078";
-        String teal = dark ? "#00e6d2" : "#008f87";
-        return "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-                + "<style>body{background:" + background + ";color:" + text + ";font-family:sans-serif;line-height:1.45;padding:12px}"
-                + "a{color:" + teal + "}img{max-width:100%;height:auto}blockquote{border-left:3px solid " + teal
-                + ";padding-left:10px;color:" + muted + "}table{max-width:100%}</style></head><body>"
-                + (html == null ? "" : html) + "</body></html>";
+        return EmailHtmlPolicy.wrapForDisplay(html);
     }
 
     private String headerValue(String wanted) {

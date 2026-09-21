@@ -114,7 +114,8 @@ public class MailboxActivity extends Activity {
             startActivity(intent);
         });
         root.addView(compose);
-        TextView version = Ui.text(this, "MailXperts v1.5.1  •  Powered by T1Xperts");
+        TextView version = Ui.text(this, "MailXperts v" + appVersion()
+                + "  •  Beta  •  Powered by T1Xperts");
         version.setTextColor(Ui.muted(this));
         version.setTextSize(12);
         version.setGravity(android.view.Gravity.CENTER);
@@ -274,6 +275,14 @@ public class MailboxActivity extends Activity {
         intent.putExtra("local_type", type);
         startActivity(intent);
     }
+    private String appVersion() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+            return "1.6.0-beta.1";
+        }
+    }
+
 
     private void requestNotificationPermission() {
         boolean enabled = false;

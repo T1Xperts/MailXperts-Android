@@ -415,19 +415,25 @@ final class MailRepository {
     }
 
     static List<Summary> search(AccountConfig account, String query, int limitPerFolder) throws Exception {
-        String clean = query == null ? "" : query.trim();
-        if (clean.isEmpty()) return Collections.emptyList();
+        return search(account, new MailSearchSpec(query, MailSearchSpec.MODE_ANY,
+                MailSearchSpec.SCOPE_ALL_SERVER, INBOX), limitPerFolder);
+    }
+
+    static List<Summary> search(AccountConfig account, MailSearchSpec spec, int limitPerFolder)
+            throws Exception {
+        if (spec == null || spec.query.trim().isEmpty()) return Collections.emptyList();
+        List<String> folders = spec.serverFolders();
+        if (folders.isEmpty()) return Collections.emptyList();
         Session session = imapSession(account);
         Store store = null;
         ArrayList<Summary> out = new ArrayList<>();
         try {
             store = session.getStore("imaps");
             store.connect(account.imapHost, account.imapPort, account.username, account.password);
-            SearchTerm term = new OrTerm(new SearchTerm[]{new SubjectTerm(clean), new FromStringTerm(clean),
-                    new RecipientStringTerm(Message.RecipientType.TO, clean),
-                    new RecipientStringTerm(Message.RecipientType.CC, clean), new BodyTerm(clean)});
-            searchFolder(account, store, INBOX, term, limitPerFolder, out);
-            searchFolder(account, store, SENT, term, limitPerFolder, out);
+            SearchTerm term = spec.serverTerm();
+            for (String folderKind : folders) {
+                searchFolder(account, store, folderKind, term, limitPerFolder, out);
+            }
             out.sort((left, right) -> Long.compare(
                     right.date == null ? 0L : right.date.getTime(),
                     left.date == null ? 0L : left.date.getTime()));
@@ -690,11 +696,16 @@ final class MailRepository {
 
     private static MessagingException connectionFailure(
             AccountConfig account, String stage, boolean authentication, Exception error) {
-        if (authentication && ProviderPreset.GMAIL.equals(account.provider)) {
-            return new MessagingException(stage + " authentication failed. Gmail rejected the "
-                    + "App Password. Use a current 16-character Google App Password generated "
-                    + "for this Google account; do not use the normal Google account password.",
-                    error);
+        if (ProviderPreset.GMAIL.equals(account.provider)) {
+            if (authentication) {
+                return new MessagingException(stage + " authentication failed. Gmail rejected the "
+                        + "App Password. Use a current 16-character Google App Password generated "
+                        + "for this Google account; do not use the normal Google account password.",
+                        error);
+            }
+            return new MessagingException(stage + " connection failed. Check your internet "
+                    + "connection and try again. MailXperts is using Google's secure Gmail "
+                    + "server settings; no password or raw provider response is shown.", error);
         }
         String kind = authentication ? "authentication" : "connection";
         return new MessagingException(stage + " " + kind + " failed: " + safe(error), error);
@@ -709,14 +720,24 @@ final class MailRepository {
         addRecipients(message, Message.RecipientType.BCC, bcc);
         message.setSubject(subject == null ? "" : subject, "UTF-8");
         message.setSentDate(new Date());
+        InlineImageCid.Prepared prepared = InlineImageCid.prepare(html);
         MimeMultipart alternative = new MimeMultipart("alternative");
         MimeBodyPart plain = new MimeBodyPart();
         plain.setText(toPlainText(html), "UTF-8");
         alternative.addBodyPart(plain);
         MimeBodyPart rich = new MimeBodyPart();
-        rich.setContent(html == null ? "" : html, "text/html; charset=UTF-8");
+        rich.setContent(prepared.html, "text/html; charset=UTF-8");
         alternative.addBodyPart(rich);
-        message.setContent(alternative);
+        if (prepared.images.isEmpty()) {
+            message.setContent(alternative);
+        } else {
+            MimeMultipart related = new MimeMultipart("related");
+            MimeBodyPart content = new MimeBodyPart();
+            content.setContent(alternative);
+            related.addBodyPart(content);
+            InlineImageCid.addParts(related, prepared);
+            message.setContent(related);
+        }
         message.saveChanges();
         return message;
     }

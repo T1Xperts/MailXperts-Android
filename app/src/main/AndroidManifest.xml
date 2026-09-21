@@ -28,7 +28,18 @@
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
         <activity android:name=".SignatureEditorActivity" android:exported="false" />
-        <activity android:name=".ComposeActivity" android:exported="false" />
+        <activity android:name=".ComposeActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
         <activity android:name=".MessageActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".InboxActivity" android:exported="false" />

@@ -17,6 +17,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.MultiAutoCompleteTextView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,9 +43,9 @@ public class ComposeActivity extends ComponentActivity {
     private String accountId;
     private SecureStore store;
     private Spinner fromAccount;
-    private EditText to;
-    private EditText cc;
-    private EditText bcc;
+    private MultiAutoCompleteTextView to;
+    private MultiAutoCompleteTextView cc;
+    private MultiAutoCompleteTextView bcc;
     private EditText subject;
     private WebView editor;
     private Button send;
@@ -53,7 +54,9 @@ public class ComposeActivity extends ComponentActivity {
     private TextView status;
     private LinearLayout attachmentList;
     private LocalStore local;
+    private RecipientHistory recipientHistory;
     private LocalStore.LocalMessage existing;
+    private String sharedBodyHtml = "";
     private boolean editorReady;
     private boolean bodyPopulated;
     private EditorSupport.FontBridge fontBridge;
@@ -64,6 +67,7 @@ public class ComposeActivity extends ComponentActivity {
         super.onCreate(state);
         store = new SecureStore(this);
         local = new LocalStore(this);
+        recipientHistory = new RecipientHistory(this);
         long localId = getIntent().getLongExtra("local_id", -1L);
         if (localId > 0) existing = local.get(localId);
         if (existing != null) attachments.addAll(LocalAttachmentStore.load(this, existing.id));
@@ -88,10 +92,14 @@ public class ComposeActivity extends ComponentActivity {
         LinearLayout fields = Ui.card(this);
         fields.addView(Ui.label(this, "FROM ACCOUNT"));
         fields.addView(buildFromAccountSpinner());
-        to = Ui.edit(this, "To");
-        cc = Ui.edit(this, "Cc (optional)");
-        bcc = Ui.edit(this, "Bcc (optional)");
+        to = Ui.recipientEdit(this, "To");
+        cc = Ui.recipientEdit(this, "Cc (optional)");
+        bcc = Ui.recipientEdit(this, "Bcc (optional)");
+        to.setAdapter(new RecipientSuggestionAdapter(this, recipientHistory));
+        cc.setAdapter(new RecipientSuggestionAdapter(this, recipientHistory));
+        bcc.setAdapter(new RecipientSuggestionAdapter(this, recipientHistory));
         subject = Ui.edit(this, "Subject");
+        applySharedAddressExtras();
         fields.addView(to);
         fields.addView(cc);
         fields.addView(bcc);
@@ -142,6 +150,7 @@ public class ComposeActivity extends ComponentActivity {
         actions.addView(schedule, scheduleParams);
         root.addView(actions);
         Ui.setContentView(this, root);
+        importSharedAttachments();
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { confirmClose(); }
         });
@@ -239,7 +248,8 @@ public class ComposeActivity extends ComponentActivity {
         if (requestedSubject != null && subject.getText().length() == 0) subject.setText(requestedSubject);
         if (editorReady && !bodyPopulated) {
             bodyPopulated = true;
-            String initial = "<p><br></p>";
+            String initial = sharedBodyHtml.isEmpty()
+                    ? "<p><br></p>" : sharedBodyHtml + "<p><br></p>";
             if (account.signatureEnabled && account.signatureHtml != null && !account.signatureHtml.trim().isEmpty()) {
                 initial += "<div data-mailxperts-signature=\"true\"><br>"
                         + SignatureHtml.normaliseStored(account.signatureHtml) + "</div>";
@@ -340,6 +350,7 @@ public class ComposeActivity extends ComponentActivity {
                         remoteDraftWarning = " • old server Draft may require manual deletion";
                     }
                 }
+                recipientHistory.learn(snapshot.to, snapshot.cc, snapshot.bcc);
                 if (previousLocalId > 0L) {
                     Scheduler.cancel(this, previousLocalId);
                     local.delete(previousLocalId);
@@ -412,6 +423,86 @@ public class ComposeActivity extends ComponentActivity {
         date.show();
     }
 
+    private void applySharedAddressExtras() {
+        Intent intent = getIntent();
+        String action = intent == null ? null : intent.getAction();
+        if (!Intent.ACTION_SEND.equals(action) && !Intent.ACTION_SEND_MULTIPLE.equals(action)) return;
+
+        String[] toValues = intent.getStringArrayExtra(Intent.EXTRA_EMAIL);
+        String[] ccValues = intent.getStringArrayExtra(Intent.EXTRA_CC);
+        String[] bccValues = intent.getStringArrayExtra(Intent.EXTRA_BCC);
+        if (toValues != null && toValues.length > 0) to.setText(String.join(", ", toValues));
+        if (ccValues != null && ccValues.length > 0) cc.setText(String.join(", ", ccValues));
+        if (bccValues != null && bccValues.length > 0) bcc.setText(String.join(", ", bccValues));
+
+        String sharedSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        if (sharedSubject != null) subject.setText(sharedSubject);
+        CharSequence sharedText = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        if (sharedText != null && sharedText.length() > 0) {
+            sharedBodyHtml = "<p>" + android.text.Html.escapeHtml(sharedText.toString())
+                    .replace("\n", "<br>") + "</p>";
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void importSharedAttachments() {
+        Intent intent = getIntent();
+        String action = intent == null ? null : intent.getAction();
+        if (!Intent.ACTION_SEND.equals(action) && !Intent.ACTION_SEND_MULTIPLE.equals(action)) return;
+
+        ArrayList<Uri> selected = new ArrayList<>();
+        if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
+            ArrayList<android.os.Parcelable> values =
+                    intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            if (values != null) {
+                for (android.os.Parcelable value : values) {
+                    if (value instanceof Uri) selected.add((Uri) value);
+                }
+            }
+        } else {
+            android.os.Parcelable value = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (value instanceof Uri) selected.add((Uri) value);
+        }
+        if (selected.isEmpty() && intent.getClipData() != null) {
+            for (int i = 0; i < intent.getClipData().getItemCount(); i++) {
+                Uri uri = intent.getClipData().getItemAt(i).getUri();
+                if (uri != null) selected.add(uri);
+            }
+        }
+        if (selected.isEmpty()) return;
+        importAttachmentUris(selected);
+    }
+
+    private void importAttachmentUris(List<Uri> selected) {
+        if (selected == null || selected.isEmpty()) return;
+        status.setTextColor(Ui.muted(this));
+        status.setText("Importing " + selected.size() + " shared attachment(s)…");
+        executor.execute(() -> {
+            ArrayList<AttachmentRef> imported = new ArrayList<>();
+            String failure = "";
+            for (Uri uri : selected) {
+                try { imported.add(AttachmentStorage.importUri(this, uri)); }
+                catch (Exception error) {
+                    failure = error.getMessage() == null
+                            ? "Could not import a shared attachment." : error.getMessage();
+                    break;
+                }
+            }
+            String finalFailure = failure;
+            runOnUiThread(() -> {
+                attachments.addAll(imported);
+                renderAttachments();
+                if (finalFailure.isEmpty()) {
+                    status.setTextColor(Ui.muted(this));
+                    status.setText(imported.size() + " shared attachment(s) ready to send");
+                } else {
+                    status.setTextColor(Ui.error(this));
+                    status.setText(finalFailure);
+                }
+            });
+        });
+    }
+
     private void pickAttachments() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -436,31 +527,7 @@ public class ComposeActivity extends ComponentActivity {
             selected.add(data.getData());
         }
         if (selected.isEmpty()) return;
-        status.setTextColor(Ui.muted(this));
-        status.setText("Importing " + selected.size() + " attachment(s)…");
-        executor.execute(() -> {
-            ArrayList<AttachmentRef> imported = new ArrayList<>();
-            String failure = "";
-            for (Uri uri : selected) {
-                try { imported.add(AttachmentStorage.importUri(this, uri)); }
-                catch (Exception error) {
-                    failure = error.getMessage() == null ? "Could not import an attachment." : error.getMessage();
-                    break;
-                }
-            }
-            String finalFailure = failure;
-            runOnUiThread(() -> {
-                attachments.addAll(imported);
-                renderAttachments();
-                if (finalFailure.isEmpty()) {
-                    status.setTextColor(Ui.muted(this));
-                    status.setText(imported.size() + " attachment(s) ready to send");
-                } else {
-                    status.setTextColor(Ui.error(this));
-                    status.setText(finalFailure);
-                }
-            });
-        });
+        importAttachmentUris(selected);
     }
 
     private void renderAttachments() {
