@@ -337,6 +337,7 @@ public class SettingsActivity extends Activity {
 
     private void applyPreset(ProviderPreset.Definition definition) {
         updatePasswordHint(definition);
+        setServerSettingsVisible(ProviderPreset.CUSTOM.equals(definition.id));
         if (!definition.imapHost.isEmpty()) imapHost.setText(definition.imapHost);
         imapPort.setText(String.valueOf(definition.imapPort));
         if (!definition.smtpHost.isEmpty()) smtpHost.setText(definition.smtpHost);
