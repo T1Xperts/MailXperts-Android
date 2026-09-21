@@ -415,19 +415,25 @@ final class MailRepository {
     }
 
     static List<Summary> search(AccountConfig account, String query, int limitPerFolder) throws Exception {
-        String clean = query == null ? "" : query.trim();
-        if (clean.isEmpty()) return Collections.emptyList();
+        return search(account, new MailSearchSpec(query, MailSearchSpec.MODE_ANY,
+                MailSearchSpec.SCOPE_ALL_SERVER, INBOX), limitPerFolder);
+    }
+
+    static List<Summary> search(AccountConfig account, MailSearchSpec spec, int limitPerFolder)
+            throws Exception {
+        if (spec == null || spec.query.trim().isEmpty()) return Collections.emptyList();
+        List<String> folders = spec.serverFolders();
+        if (folders.isEmpty()) return Collections.emptyList();
         Session session = imapSession(account);
         Store store = null;
         ArrayList<Summary> out = new ArrayList<>();
         try {
             store = session.getStore("imaps");
             store.connect(account.imapHost, account.imapPort, account.username, account.password);
-            SearchTerm term = new OrTerm(new SearchTerm[]{new SubjectTerm(clean), new FromStringTerm(clean),
-                    new RecipientStringTerm(Message.RecipientType.TO, clean),
-                    new RecipientStringTerm(Message.RecipientType.CC, clean), new BodyTerm(clean)});
-            searchFolder(account, store, INBOX, term, limitPerFolder, out);
-            searchFolder(account, store, SENT, term, limitPerFolder, out);
+            SearchTerm term = spec.serverTerm();
+            for (String folderKind : folders) {
+                searchFolder(account, store, folderKind, term, limitPerFolder, out);
+            }
             out.sort((left, right) -> Long.compare(
                     right.date == null ? 0L : right.date.getTime(),
                     left.date == null ? 0L : left.date.getTime()));
