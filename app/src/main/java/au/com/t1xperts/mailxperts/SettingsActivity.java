@@ -37,6 +37,9 @@ public class SettingsActivity extends Activity {
     private Spinner smtpSecurity;
     private Spinner syncInterval;
     private TextView providerHelp;
+    private LinearLayout serverSettingsCard;
+    private Button serverSettingsToggle;
+    private TextView deleteModeStatus;
     private Switch syncEnabled;
     private Switch notificationsEnabled;
     private Switch deleteFromServer;
@@ -134,6 +137,7 @@ public class SettingsActivity extends Activity {
         root.addView(identity);
 
         LinearLayout servers = Ui.card(this);
+        serverSettingsCard = servers;
         servers.addView(Ui.label(this, "INCOMING SERVER — IMAP SSL/TLS"));
         imapHost = Ui.edit(this, "mail.example.com");
         imapHost.setText(current.imapHost);
@@ -176,7 +180,16 @@ public class SettingsActivity extends Activity {
         smtpSecurity.setAdapter(securityAdapter);
         smtpSecurity.setSelection(AccountConfig.SMTP_STARTTLS.equals(current.smtpSecurity) ? 1 : 0, false);
         servers.addView(smtpSecurity);
+        TextView serverNote = Ui.text(this,
+                "Provider defaults are prefilled. Open advanced server settings only when you need custom IMAP/SMTP values.");
+        serverNote.setTextColor(Ui.muted(this));
+        serverNote.setTextSize(13);
+        root.addView(serverNote);
+        serverSettingsToggle = Ui.secondaryButton(this, "Show advanced server settings",
+                v -> setServerSettingsVisible(serverSettingsCard.getVisibility() != View.VISIBLE));
+        root.addView(serverSettingsToggle);
         root.addView(servers);
+        setServerSettingsVisible(ProviderPreset.CUSTOM.equals(current.provider));
 
         provider.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onNothingSelected(AdapterView<?> parent) {}
@@ -230,14 +243,18 @@ public class SettingsActivity extends Activity {
         syncReadState = preferenceSwitch(
                 "Mark opened messages as read on the server", current.syncReadState);
         deleteFromServer = preferenceSwitch(
-                "Delete from server too — move to Trash", current.deleteFromServer);
+                "Also delete from mail server (move to Trash)", current.deleteFromServer);
         syncDraftsToServer = preferenceSwitch(
                 "Keep saved Drafts in the server Drafts folder", current.syncDraftsToServer);
         preferences.addView(syncReadState);
         preferences.addView(deleteFromServer);
+        deleteModeStatus = Ui.text(this, "");
+        deleteModeStatus.setTextSize(13);
+        deleteModeStatus.setTextColor(Ui.muted(this));
+        preferences.addView(deleteModeStatus);
         preferences.addView(syncDraftsToServer);
         TextView actionNote = Ui.text(this,
-                "Safe default: server deletion is off. When off, Delete only hides the message on this device. Drafts always save locally first; server Drafts sync is optional.");
+                "Safe default: server deletion is off. Drafts always save locally first; server Drafts sync is optional.");
         actionNote.setTextColor(Ui.muted(this));
         actionNote.setTextSize(13);
         preferences.addView(actionNote);
@@ -259,6 +276,7 @@ public class SettingsActivity extends Activity {
         signatureNote.setTextSize(13);
         preferences.addView(signatureNote);
         signatureEnabled.setOnCheckedChangeListener((button, checked) -> updateSignatureState());
+        deleteFromServer.setOnCheckedChangeListener((button, checked) -> updateDeleteModeState());
         syncEnabled.setOnCheckedChangeListener((button, checked) -> updateSyncPreferenceState());
         syncInterval.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onNothingSelected(AdapterView<?> parent) {}
@@ -268,6 +286,7 @@ public class SettingsActivity extends Activity {
             }
         });
         updateSyncPreferenceState();
+        updateDeleteModeState();
         updateSignatureState();
         root.addView(preferences);
 
@@ -285,6 +304,25 @@ public class SettingsActivity extends Activity {
         root.addView(forget);
         root.addView(Ui.secondaryButton(this, "Appearance", v -> startActivity(new Intent(this, AppearanceActivity.class))));
         Ui.setContentView(this, scroll);
+    }
+
+    private void setServerSettingsVisible(boolean visible) {
+        if (serverSettingsCard == null || serverSettingsToggle == null) return;
+        serverSettingsCard.setVisibility(visible ? View.VISIBLE : View.GONE);
+        serverSettingsToggle.setText(visible
+                ? "Hide advanced server settings"
+                : "Show advanced server settings");
+    }
+
+    private void updateDeleteModeState() {
+        if (deleteModeStatus == null || deleteFromServer == null) return;
+        if (deleteFromServer.isChecked()) {
+            deleteModeStatus.setText("Current Delete behaviour: move the message to the provider's server Trash.");
+            deleteModeStatus.setTextColor(Ui.error(this));
+        } else {
+            deleteModeStatus.setText("Current Delete behaviour: hide the message on this device only; server copy is retained.");
+            deleteModeStatus.setTextColor(Ui.muted(this));
+        }
     }
 
     private void applyPreset(ProviderPreset.Definition definition) {
