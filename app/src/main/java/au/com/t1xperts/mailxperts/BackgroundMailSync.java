@@ -57,7 +57,7 @@ final class BackgroundMailSync {
                             for (MailRepository.Summary summary : batch) {
                                 recipientHistory.learnMessage(
                                         account.id, MailRepository.INBOX,
-                                        summary.uid, summary.contactFields);
+                                        summary.uid, account.email, summary.contactFields);
                             }
                             collector.accept(batch, local, account.id);
                         }
