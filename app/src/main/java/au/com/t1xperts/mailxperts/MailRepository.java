@@ -74,17 +74,24 @@ final class MailRepository {
         final String folderKind;
         final String accountId;
         final String accountLabel;
+        final String[] contactFields;
 
         Summary(long uid, String from, String subject, Date date, boolean seen) {
-            this(uid, from, subject, date, seen, INBOX, "", "");
+            this(uid, from, subject, date, seen, INBOX, "", "", new String[0]);
         }
 
         Summary(long uid, String from, String subject, Date date, boolean seen, String folderKind) {
-            this(uid, from, subject, date, seen, folderKind, "", "");
+            this(uid, from, subject, date, seen, folderKind, "", "", new String[0]);
         }
 
         Summary(long uid, String from, String subject, Date date, boolean seen, String folderKind,
                 String accountId, String accountLabel) {
+            this(uid, from, subject, date, seen, folderKind, accountId, accountLabel,
+                    new String[0]);
+        }
+
+        Summary(long uid, String from, String subject, Date date, boolean seen, String folderKind,
+                String accountId, String accountLabel, String[] contactFields) {
             this.uid = uid;
             this.from = from;
             this.subject = subject;
@@ -93,6 +100,7 @@ final class MailRepository {
             this.folderKind = folderKind;
             this.accountId = accountId == null ? "" : accountId;
             this.accountLabel = accountLabel == null ? "" : accountLabel;
+            this.contactFields = contactFields == null ? new String[0] : contactFields.clone();
         }
     }
 
@@ -360,14 +368,21 @@ final class MailRepository {
                 long uid = uidFolder.getUID(message);
                 if (uid <= 0L) continue;
                 if (stopAtOrBelowUid > 0L && uid <= stopAtOrBelowUid) overlapFound = true;
+                String[] contactFields = new String[]{
+                        addresses(message.getFrom()),
+                        addresses(message.getReplyTo()),
+                        addresses(message.getRecipients(Message.RecipientType.TO)),
+                        addresses(message.getRecipients(Message.RecipientType.CC)),
+                        addresses(message.getRecipients(Message.RecipientType.BCC))
+                };
                 String correspondent = SENT.equals(kind)
-                        ? addresses(message.getRecipients(Message.RecipientType.TO))
-                        : addresses(message.getFrom());
+                        ? contactFields[2]
+                        : contactFields[0];
                 batch.add(new Summary(uid, correspondent, message.getSubject(),
                         message.getReceivedDate() != null
                                 ? message.getReceivedDate() : message.getSentDate(),
                         message.isSet(Flags.Flag.SEEN), kind,
-                        account.id, account.displayName()));
+                        account.id, account.displayName(), contactFields));
             }
 
             processed += batch.size();
