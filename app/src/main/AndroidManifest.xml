@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Legacy HTML email bodies can reference http:// images. Mail transport itself remains
          IMAPS/SMTPS, while MessageActivity disables JavaScript, file/content access and storage. -->
     <application
@@ -25,6 +26,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <activity android:name=".AppearanceActivity" android:exported="false" />
+        <activity android:name=".SmartContactsActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
         <activity android:name=".SignatureEditorActivity" android:exported="false" />

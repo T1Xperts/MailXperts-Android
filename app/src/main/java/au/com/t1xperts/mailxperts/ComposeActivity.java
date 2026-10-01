@@ -350,7 +350,7 @@ public class ComposeActivity extends ComponentActivity {
                         remoteDraftWarning = " • old server Draft may require manual deletion";
                     }
                 }
-                recipientHistory.learn(snapshot.to, snapshot.cc, snapshot.bcc);
+                recipientHistory.learnOutgoing(snapshot.to, snapshot.cc, snapshot.bcc);
                 if (previousLocalId > 0L) {
                     Scheduler.cancel(this, previousLocalId);
                     local.delete(previousLocalId);
