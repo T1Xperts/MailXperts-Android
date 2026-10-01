@@ -44,6 +44,8 @@ public class ScheduledEmailReceiver extends BroadcastReceiver {
                 MailAttachmentRepository.sendHtmlWithAttachments(account,
                         message.to, message.cc, message.bcc,
                         message.subject, message.html, attachments);
+                new RecipientHistory(context).learnOutgoing(
+                        message.to, message.cc, message.bcc);
                 sent = true;
             } catch (Exception error) {
                 copyToOutbox(context, db, message, attachments,
