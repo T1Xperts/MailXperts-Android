@@ -29,4 +29,25 @@ public class RecipientDirectoryTest {
         assertEquals(3, result.size());
         assertTrue(result.get(0).startsWith("Ahanaf Tahmid"));
     }
+
+    @Test public void automatedSystemAddressesAreNotLearnable() {
+        assertTrue(!RecipientDirectory.isLearnableEmail("no-reply@example.com"));
+        assertTrue(!RecipientDirectory.isLearnableEmail("mailer-daemon@example.com"));
+        assertTrue(RecipientDirectory.isLearnableEmail("accounts@example.com"));
+    }
+
+    @Test public void mergeEntriesDeduplicatesDeviceAndLearnedContacts() {
+        ArrayList<RecipientDirectory.Entry> learned = new ArrayList<>();
+        learned.add(new RecipientDirectory.Entry("Alice", "alice@example.com", 5, 100,
+                10, 3, 2, "MailXperts"));
+        ArrayList<RecipientDirectory.Entry> device = new ArrayList<>();
+        device.add(new RecipientDirectory.Entry("", "ALICE@example.com", 1, 0,
+                0, 0, 0, "Android Contacts"));
+
+        List<RecipientDirectory.Entry> merged = RecipientDirectory.mergeEntries(learned, device);
+
+        assertEquals(1, merged.size());
+        assertEquals("Alice", merged.get(0).name);
+        assertTrue(merged.get(0).source.contains("Android Contacts"));
+    }
 }
