@@ -41,25 +41,35 @@ final class RecipientHistory {
     }
 
     synchronized void learnOutgoing(String... rawFields) {
-        learnInternal(false, "MailXperts sent", rawFields);
+        learnInternal(false, "MailXperts sent", "", rawFields);
     }
 
     synchronized void learnIncoming(String... rawFields) {
-        learnInternal(true, "MailXperts received", rawFields);
+        learnInternal(true, "MailXperts received", "", rawFields);
     }
 
     synchronized void learnMessage(String accountId, String folderKind, long uid,
                                    String... rawFields) {
+        learnMessage(accountId, folderKind, uid, "", rawFields);
+    }
+
+    synchronized void learnMessage(String accountId, String folderKind, long uid,
+                                   String excludedEmail, String... rawFields) {
         if (uid <= 0L) {
-            if (MailRepository.SENT.equals(folderKind)) learnOutgoing(rawFields);
-            else learnIncoming(rawFields);
+            learnInternal(!MailRepository.SENT.equals(folderKind),
+                    MailRepository.SENT.equals(folderKind)
+                            ? "MailXperts sent" : "MailXperts received",
+                    excludedEmail, rawFields);
             return;
         }
         String messageKey = safe(accountId) + "|" + safe(folderKind) + "|" + uid;
         LinkedHashSet<String> seen = loadSet(KEY_SEEN_MESSAGES);
         if (seen.contains(messageKey)) return;
-        if (MailRepository.SENT.equals(folderKind)) learnInternal(false, "MailXperts sent", rawFields);
-        else learnInternal(true, "MailXperts received", rawFields);
+        if (MailRepository.SENT.equals(folderKind)) {
+            learnInternal(false, "MailXperts sent", excludedEmail, rawFields);
+        } else {
+            learnInternal(true, "MailXperts received", excludedEmail, rawFields);
+        }
         seen.add(messageKey);
         trimSet(seen, MAX_SEEN_MESSAGES);
         saveSet(KEY_SEEN_MESSAGES, seen);
@@ -153,7 +163,8 @@ final class RecipientHistory {
                 .apply();
     }
 
-    private void learnInternal(boolean incomingDirection, String source, String... rawFields) {
+    private void learnInternal(boolean incomingDirection, String source,
+                               String excludedEmail, String... rawFields) {
         List<RecipientDirectory.Entry> incoming = RecipientDirectory.parseAddresses(rawFields);
         if (incoming.isEmpty()) return;
         LinkedHashMap<String, RecipientDirectory.Entry> merged = index(load());
@@ -161,6 +172,8 @@ final class RecipientHistory {
         for (RecipientDirectory.Entry learned : incoming) {
             if (!RecipientDirectory.isLearnableEmail(learned.email)) continue;
             String key = learned.email.toLowerCase(Locale.ROOT);
+            String excluded = excludedEmail == null ? "" : excludedEmail.trim().toLowerCase(Locale.ROOT);
+            if (!excluded.isEmpty() && key.equals(excluded)) continue;
             if (isBlockedKey(key)) continue;
             RecipientDirectory.Entry existing = merged.get(key);
             if (existing == null) {
