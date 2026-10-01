@@ -35,7 +35,8 @@ public class ManifestContractTest {
         assertTrue(manifest.contains("android:name=\".SmartContactsActivity\""));
         assertTrue(manifest.matches("(?s).*SmartContactsActivity\"\\s+android:exported=\"false\".*"));
     }
-\n    private static String readProjectFile(String modulePath, String rootPath) throws Exception {
+
+    private static String readProjectFile(String modulePath, String rootPath) throws Exception {
         Path path = Paths.get(modulePath);
         if (!Files.exists(path)) path = Paths.get(rootPath);
         return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
