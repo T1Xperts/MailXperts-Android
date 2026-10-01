@@ -408,7 +408,8 @@ public class InboxActivity extends Activity {
                                     || MailRepository.SENT.equals(kind))) {
                                 for (MailRepository.Summary summary : batch) {
                                     recipientHistory.learnMessage(
-                                            configured.id, kind, summary.uid, summary.contactFields);
+                                            configured.id, kind, summary.uid,
+                                            configured.email, summary.contactFields);
                                 }
                             }
                             if (shouldRenderProgress(processed, expected)) {
