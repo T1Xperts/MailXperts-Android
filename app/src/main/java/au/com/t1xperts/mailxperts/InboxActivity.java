@@ -69,6 +69,7 @@ public class InboxActivity extends Activity {
     private Button refreshButton;
     private Button loadOlderButton;
     private LocalStore localStore;
+    private RecipientHistory recipientHistory;
     private ExecutorService accountExecutor;
     private volatile Future<?> coordinatorFuture;
     private volatile boolean canLoadOlder = true;
@@ -106,6 +107,7 @@ public class InboxActivity extends Activity {
         foregroundRefreshIntervalMs = shortestAutomaticInterval();
 
         localStore = new LocalStore(this);
+        recipientHistory = new RecipientHistory(this);
         accountExecutor = Executors.newFixedThreadPool(
                 Math.min(MAX_PARALLEL_ACCOUNTS, accounts.size()), runnable -> {
                     Thread thread = new Thread(runnable, "mailxperts-account-sync");
@@ -386,7 +388,12 @@ public class InboxActivity extends Activity {
                     configured, kind, request, new MailRepository.SyncObserver() {
                         @Override public void onMailboxOpened(
                                 long uidValidity, boolean cacheMustReset, int serverMessageCount) {
-                            if (cacheMustReset) localStore.clearCached(configured.id, kind);
+                            if (cacheMustReset) {
+                                localStore.clearCached(configured.id, kind);
+                                if (recipientHistory != null) {
+                                    recipientHistory.clearSeenForAccountFolder(configured.id, kind);
+                                }
+                            }
                             localStore.saveSyncState(configured.id, kind, work.target,
                                     uidValidity, work.previous.lastSuccessfulSyncAt,
                                     serverMessageCount);
@@ -396,6 +403,14 @@ public class InboxActivity extends Activity {
                                 List<MailRepository.Summary> batch,
                                 int processed, int expected, String phase) {
                             localStore.replaceCachedRange(configured.id, kind, batch);
+                            if (recipientHistory != null
+                                    && (MailRepository.INBOX.equals(kind)
+                                    || MailRepository.SENT.equals(kind))) {
+                                for (MailRepository.Summary summary : batch) {
+                                    recipientHistory.learnMessage(
+                                            configured.id, kind, summary.uid, summary.contactFields);
+                                }
+                            }
                             if (shouldRenderProgress(processed, expected)) {
                                 postProgress(combinedSnapshot(targets),
                                         configured.displayName() + " • " + phase,
