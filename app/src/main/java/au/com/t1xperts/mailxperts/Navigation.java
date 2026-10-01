@@ -44,6 +44,10 @@ final class Navigation {
         add(drawer, panel, activity, accountId, "Spam / Junk",
                 () -> openServer(activity, accountId, MailRepository.JUNK));
 
+        panel.addView(Ui.label(activity, "PEOPLE"));
+        add(drawer, panel, activity, accountId, "Smart Contacts",
+                () -> activity.startActivity(new Intent(activity, SmartContactsActivity.class)));
+
         panel.addView(Ui.label(activity, "LOCAL"));
         add(drawer, panel, activity, accountId, "Drafts",
                 () -> openLocal(activity, accountId, LocalStore.DRAFT));
