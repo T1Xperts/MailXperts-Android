@@ -27,6 +27,7 @@ final class BackgroundMailSync {
         }
 
         LocalStore local = new LocalStore(context);
+        RecipientHistory recipientHistory = new RecipientHistory(context);
         try {
             LocalStore.SyncState previous = local.getSyncState(account.id, MailRepository.INBOX);
             LocalStore.CacheStats before = local.cacheStats(account.id, MailRepository.INBOX);
@@ -41,6 +42,8 @@ final class BackgroundMailSync {
                                 long uidValidity, boolean cacheMustReset, int serverMessageCount) {
                             if (cacheMustReset) {
                                 local.clearCached(account.id, MailRepository.INBOX);
+                                recipientHistory.clearSeenForAccountFolder(
+                                        account.id, MailRepository.INBOX);
                                 collector.suppressNotification();
                             }
                             local.saveSyncState(account.id, MailRepository.INBOX,
@@ -51,6 +54,11 @@ final class BackgroundMailSync {
                         @Override public void onBatch(List<MailRepository.Summary> batch,
                                                       int processed, int expected, String phase) {
                             local.replaceCachedRange(account.id, MailRepository.INBOX, batch);
+                            for (MailRepository.Summary summary : batch) {
+                                recipientHistory.learnMessage(
+                                        account.id, MailRepository.INBOX,
+                                        summary.uid, summary.contactFields);
+                            }
                             collector.accept(batch, local, account.id);
                         }
                     }, token);
