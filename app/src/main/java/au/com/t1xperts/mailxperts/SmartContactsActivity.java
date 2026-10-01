@@ -177,7 +177,8 @@ public class SmartContactsActivity extends Activity {
 
         merged.sort(Comparator
                 .comparingLong((RecipientDirectory.Entry e) -> e.lastUsed).reversed()
-                .thenComparingInt((RecipientDirectory.Entry e) -> e.count).reversed()
+                .thenComparing(Comparator
+                        .comparingInt((RecipientDirectory.Entry e) -> e.count).reversed())
                 .thenComparing(e -> e.label().toLowerCase(Locale.ROOT)));
 
         status.setText(localEntries.size() + " learned • "
