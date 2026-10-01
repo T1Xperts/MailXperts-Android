@@ -43,6 +43,13 @@ A future direct Google People API or direct iCloud/CardDAV cloud connector requi
 - Release identity contract updated for versionCode 16 / 1.6.0-beta.2.
 - Existing recipient parsing/autocomplete regression tests remain active.
 
+
+## Release signing path
+
+The main-branch automated code-quality and P0 regression gates passed for this release. The GitHub-hosted signed-release lane reached the permanent-key restoration gate but did not complete signing, so no unsigned artifact is being represented as a production release.
+
+The repository's offline-signing workflow is used as the controlled fallback: it builds and verifies the production package identity, bundles Android Build Tools `apksigner`, and the resulting APK is signed offline with the established MailXperts production certificate before distribution.
+
 ## Beta exit criteria
 
 - Standard Android CI: lint, JVM tests and debug APK build pass.
