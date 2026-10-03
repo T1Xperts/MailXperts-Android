@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 
 public class SettingsActivity extends Activity {
     private static final int EDIT_SIGNATURE = 5201;
+    private static final int OAUTH_CONNECT = 5202;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private EditText label;
@@ -49,6 +50,7 @@ public class SettingsActivity extends Activity {
     private Button editSignature;
     private TextView signatureStatus;
     private Button save;
+    private Button oauthConnect;
     private TextView status;
     private SecureStore store;
     private AccountConfig current;
@@ -135,6 +137,9 @@ public class SettingsActivity extends Activity {
         password.setText(current.password);
         identity.addView(password);
         root.addView(identity);
+        oauthConnect = Ui.secondaryButton(this, "Secure provider sign-in", v -> startOAuthConnect());
+        root.addView(oauthConnect);
+        updateAuthUi(ProviderPreset.find(current.provider));
 
         LinearLayout servers = Ui.card(this);
         serverSettingsCard = servers;
@@ -197,6 +202,7 @@ public class SettingsActivity extends Activity {
                 ProviderPreset.Definition definition = definitions.get(position);
                 providerHelp.setText(definition.help);
                 current.provider = definition.id;
+                updateAuthUi(definition);
                 if (providerReady) applyPreset(definition);
             }
         });
@@ -337,6 +343,8 @@ public class SettingsActivity extends Activity {
 
     private void applyPreset(ProviderPreset.Definition definition) {
         updatePasswordHint(definition);
+        current.authType = definition.preferredAuthType;
+        updateAuthUi(definition);
         setServerSettingsVisible(ProviderPreset.CUSTOM.equals(definition.id));
         if (!definition.imapHost.isEmpty()) imapHost.setText(definition.imapHost);
         imapPort.setText(String.valueOf(definition.imapPort));
@@ -353,8 +361,45 @@ public class SettingsActivity extends Activity {
     private void updatePasswordHint(ProviderPreset.Definition definition) {
         boolean gmail = definition != null && ProviderPreset.GMAIL.equals(definition.id);
         password.setHint(gmail
-                ? "Google 16-character App Password"
+                ? "Google App Password (fallback only)"
                 : "Password or provider app-specific password");
+    }
+
+    private void updateAuthUi(ProviderPreset.Definition definition) {
+        if (oauthConnect == null || password == null || definition == null) return;
+        boolean oauthProvider = definition.supportsOAuth2;
+        oauthConnect.setVisibility(oauthProvider ? View.VISIBLE : View.GONE);
+        if (ProviderPreset.GMAIL.equals(definition.id)) {
+            oauthConnect.setText("Continue with Google (recommended)");
+            password.setVisibility(View.VISIBLE);
+        } else if (ProviderPreset.OUTLOOK.equals(definition.id)) {
+            oauthConnect.setText("Continue with Microsoft");
+            password.setVisibility(View.GONE);
+        } else {
+            password.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void startOAuthConnect() {
+        AccountConfig account = read();
+        if (account.email == null || account.email.trim().isEmpty()) {
+            status.setTextColor(Ui.error(this));
+            status.setText("Enter the email address first, then continue with the provider.");
+            return;
+        }
+        account.username = account.email.trim();
+        account.authType = AuthType.OAUTH2;
+        account.password = "";
+        try {
+            store.save(account);
+        } catch (Exception error) {
+            showSaveError("Could not prepare secure provider sign-in: ", error);
+            return;
+        }
+        current = account;
+        Intent intent = new Intent(this, OAuthConnectActivity.class);
+        intent.putExtra(OAuthConnectActivity.EXTRA_ACCOUNT_ID, account.id);
+        startActivityForResult(intent, OAUTH_CONNECT);
     }
 
     private LinearLayout buildHeader(String titleText) {
@@ -447,9 +492,11 @@ public class SettingsActivity extends Activity {
     private void testAndSave() {
         AccountConfig account = read();
         ProviderPreset.Definition definition = ProviderPreset.find(account.provider);
-        if (definition.oauthRequired) {
-            status.setTextColor(Ui.error(this));
-            status.setText("Outlook.com requires OAuth2/Modern Auth. The T1Xperts Microsoft app registration and redirect URI must be configured before Outlook sign-in can be enabled.");
+        if (AuthType.isOAuth(account.authType)) {
+            status.setTextColor(Ui.muted(this));
+            status.setText(ProviderPreset.GMAIL.equals(account.provider)
+                    ? "Use Continue with Google to authorize this Gmail account."
+                    : "Use Continue with Microsoft to authorize this account.");
             return;
         }
         if (ProviderPreset.GMAIL.equals(account.provider)
@@ -513,6 +560,15 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == OAUTH_CONNECT) {
+            if (resultCode == RESULT_OK && current != null) {
+                current = store.load(current.id);
+                Toast.makeText(this, "Secure provider sign-in completed", Toast.LENGTH_SHORT).show();
+                boolean backgroundReady = NotificationScheduler.update(getApplicationContext(), current);
+                openSavedAccount(current, backgroundReady);
+            }
+            return;
+        }
         if (requestCode != EDIT_SIGNATURE || resultCode != RESULT_OK || data == null) return;
         signatureHtmlDraft = SignatureHtml.normaliseStored(
                 data.getStringExtra(SignatureEditorActivity.EXTRA_SIGNATURE_HTML));

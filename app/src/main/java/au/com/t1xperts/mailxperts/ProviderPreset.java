@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/** Known secure server presets. OAuth providers still require an app registration. */
+/** Known secure server presets plus authentication capabilities. */
 final class ProviderPreset {
     static final String T1XPERTS = "T1XPERTS";
     static final String GMAIL = "GMAIL";
@@ -22,11 +22,18 @@ final class ProviderPreset {
         final int smtpPort;
         final String smtpSecurity;
         final String help;
+        final String preferredAuthType;
+        final boolean supportsOAuth2;
+        final boolean supportsAppPassword;
+        final boolean supportsPassword;
+        // Retained temporarily for compatibility with older settings code.
         final boolean oauthRequired;
 
         Definition(String id, String name, String imapHost, int imapPort,
                    String smtpHost, int smtpPort, String smtpSecurity,
-                   String help, boolean oauthRequired) {
+                   String help, String preferredAuthType,
+                   boolean supportsOAuth2, boolean supportsAppPassword,
+                   boolean supportsPassword) {
             this.id = id;
             this.name = name;
             this.imapHost = imapHost;
@@ -35,7 +42,18 @@ final class ProviderPreset {
             this.smtpPort = smtpPort;
             this.smtpSecurity = smtpSecurity;
             this.help = help;
-            this.oauthRequired = oauthRequired;
+            this.preferredAuthType = preferredAuthType;
+            this.supportsOAuth2 = supportsOAuth2;
+            this.supportsAppPassword = supportsAppPassword;
+            this.supportsPassword = supportsPassword;
+            this.oauthRequired = AuthType.OAUTH2.equals(preferredAuthType)
+                    && !supportsAppPassword && !supportsPassword;
+        }
+
+        boolean supportsAuth(String authType) {
+            if (AuthType.OAUTH2.equals(authType)) return supportsOAuth2;
+            if (AuthType.APP_PASSWORD.equals(authType)) return supportsAppPassword;
+            return supportsPassword;
         }
 
         @Override public String toString() { return name; }
@@ -44,22 +62,28 @@ final class ProviderPreset {
     private static final List<Definition> DEFINITIONS = Arrays.asList(
             new Definition(T1XPERTS, "T1Xperts / hosted IMAP", "t1xperts.com.au", 993,
                     "t1xperts.com.au", 465, AccountConfig.SMTP_SSL,
-                    "Use the mailbox password supplied by the mail administrator.", false),
+                    "Use the secure mailbox credential supplied by the mail administrator.",
+                    AuthType.PASSWORD, false, false, true),
             new Definition(GMAIL, "Google Gmail", "imap.gmail.com", 993,
                     "smtp.gmail.com", 465, AccountConfig.SMTP_SSL,
-                    "Use a Google 16-character App Password with 2-Step Verification. Spaces are removed automatically. Sign in with Google/OAuth will be added after the T1Xperts Google client is registered.", false),
+                    "Recommended: Continue with Google (OAuth2). A Google App Password is retained only as a compatibility fallback where account policy permits it.",
+                    AuthType.OAUTH2, true, true, false),
             new Definition(YAHOO, "Yahoo Mail", "imap.mail.yahoo.com", 993,
                     "smtp.mail.yahoo.com", 465, AccountConfig.SMTP_SSL,
-                    "Generate a Yahoo third-party app password, then enter it below.", false),
+                    "Use the provider-approved Yahoo app password. OAuth can be added through the same provider adapter model.",
+                    AuthType.APP_PASSWORD, false, true, false),
             new Definition(ICLOUD, "Apple iCloud Mail", "imap.mail.me.com", 993,
                     "smtp.mail.me.com", 587, AccountConfig.SMTP_STARTTLS,
-                    "Use an Apple app-specific password.", false),
-            new Definition(OUTLOOK, "Microsoft Outlook / Hotmail / MSN / Live", "outlook.office365.com", 993,
-                    "smtp-mail.outlook.com", 587, AccountConfig.SMTP_STARTTLS,
-                    "Microsoft requires OAuth2/Modern Auth. T1Xperts must register the app before this provider can be connected.", true),
+                    "Use an Apple app-specific password for standards-based IMAP/SMTP access.",
+                    AuthType.APP_PASSWORD, false, true, false),
+            new Definition(OUTLOOK, "Microsoft Outlook / Microsoft 365", "outlook.office365.com", 993,
+                    "smtp.office365.com", 587, AccountConfig.SMTP_STARTTLS,
+                    "Continue with Microsoft using OAuth2/Modern Authentication. Normal Microsoft account passwords are never collected.",
+                    AuthType.OAUTH2, true, false, false),
             new Definition(CUSTOM, "Other / custom IMAP", "", 993,
                     "", 465, AccountConfig.SMTP_SSL,
-                    "Enter the secure IMAP and SMTP settings supplied by your provider.", false)
+                    "Enter the secure IMAP and SMTP settings supplied by your provider.",
+                    AuthType.PASSWORD, false, true, true)
     );
 
     private ProviderPreset() {}

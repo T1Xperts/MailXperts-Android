@@ -26,10 +26,12 @@ final class SecureStore {
     private static final String KEY_ALIAS = "mailxperts_credentials_aes";
     private final Context context;
     private final SharedPreferences prefs;
+    private final CredentialVault credentialVault;
 
     SecureStore(Context context) {
         this.context = context.getApplicationContext();
         prefs = this.context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        credentialVault = new CredentialVault(this.context);
         migrateLegacyIfNeeded();
     }
 
@@ -54,6 +56,9 @@ final class SecureStore {
     }
 
     synchronized void save(AccountConfig account) throws Exception {
+        account.authType = AuthType.normalise(account.authType);
+        if (AuthType.isOAuth(account.authType)) account.password = "";
+
         List<AccountConfig> all = loadAll();
         boolean replaced = false;
         for (int i = 0; i < all.size(); i++) {
@@ -79,6 +84,7 @@ final class SecureStore {
                 if (next.isEmpty()) next = c.id;
             }
         }
+        credentialVault.clear(id);
         prefs.edit().putString("accounts", a.toString()).putString("selected", next).apply();
     }
 
@@ -90,14 +96,20 @@ final class SecureStore {
         AccountConfig a = load(id);
         if (a.id.equals(id)) {
             a.password = "";
+            credentialVault.clear(id);
             try { save(a); } catch (Exception ignored) {}
         }
+    }
+
+    synchronized void clearCredentials(String id) {
+        clearPassword(id);
     }
 
     private JSONObject toJson(AccountConfig a) throws Exception {
         JSONObject o = new JSONObject();
         o.put("id", a.id);
         o.put("provider", a.provider == null ? ProviderPreset.CUSTOM : a.provider);
+        o.put("authType", AuthType.normalise(a.authType));
         o.put("label", a.label == null ? "" : a.label);
         o.put("email", a.email);
         o.put("username", a.username);
@@ -114,7 +126,9 @@ final class SecureStore {
         o.put("syncDraftsToServer", a.syncDraftsToServer);
         o.put("signatureEnabled", a.signatureEnabled);
         o.put("signatureHtml", a.signatureHtml == null ? "" : a.signatureHtml);
-        o.put("password", a.password == null || a.password.isEmpty() ? "" : encrypt(a.password));
+        boolean persistPassword = !AuthType.isOAuth(a.authType)
+                && a.password != null && !a.password.isEmpty();
+        o.put("password", persistPassword ? encrypt(a.password) : "");
         return o;
     }
 
@@ -140,13 +154,27 @@ final class SecureStore {
             a.syncDraftsToServer = o.optBoolean("syncDraftsToServer", false);
             a.signatureEnabled = o.optBoolean("signatureEnabled", false);
             a.signatureHtml = o.optString("signatureHtml", "");
-            String enc = o.optString("password", "");
-            a.password = enc.isEmpty() ? "" : decrypt(enc);
             if (a.provider == null || a.provider.isEmpty()) {
                 a.provider = ProviderPreset.infer(a.email, a.imapHost);
             }
+            String persistedAuthType = o.optString("authType", "");
+            a.authType = persistedAuthType.isEmpty()
+                    ? legacyAuthType(a.provider)
+                    : AuthType.normalise(persistedAuthType);
+            String enc = o.optString("password", "");
+            a.password = AuthType.isOAuth(a.authType) || enc.isEmpty() ? "" : decrypt(enc);
             return a;
         } catch (Exception e) { return null; }
+    }
+
+    private static String legacyAuthType(String provider) {
+        if (ProviderPreset.GMAIL.equals(provider)
+                || ProviderPreset.YAHOO.equals(provider)
+                || ProviderPreset.ICLOUD.equals(provider)) {
+            return AuthType.APP_PASSWORD;
+        }
+        if (ProviderPreset.OUTLOOK.equals(provider)) return AuthType.OAUTH2;
+        return AuthType.PASSWORD;
     }
 
     private void migrateLegacyIfNeeded() {
@@ -162,6 +190,8 @@ final class SecureStore {
         a.imapPort = legacy.getInt("imapPort", a.imapPort);
         a.smtpHost = legacy.getString("smtpHost", a.smtpHost);
         a.smtpPort = legacy.getInt("smtpPort", a.smtpPort);
+        a.provider = ProviderPreset.infer(a.email, a.imapHost);
+        a.authType = legacyAuthType(a.provider);
         if (!legacyPassword.isEmpty()) {
             try { a.password = decrypt(legacyPassword); } catch (Exception ignored) {}
         }

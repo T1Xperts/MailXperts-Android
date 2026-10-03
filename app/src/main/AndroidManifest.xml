@@ -8,6 +8,7 @@
     <!-- Legacy HTML email bodies can reference http:// images. Mail transport itself remains
          IMAPS/SMTPS, while MessageActivity disables JavaScript, file/content access and storage. -->
     <application
+        android:name=".MailXpertsApplication"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@drawable/mailxperts_icon"
@@ -30,6 +31,7 @@
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
         <activity android:name=".SignatureEditorActivity" android:exported="false" />
+        <activity android:name=".OAuthConnectActivity" android:exported="false" />
         <activity android:name=".ComposeActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

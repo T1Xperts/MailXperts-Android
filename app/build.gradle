@@ -9,6 +9,18 @@ def releaseKeyPassword = System.getenv('MX_KEY_PASSWORD')
 def releaseSigningReady = [releaseKeystore, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it != null && !it.trim().isEmpty() }
 def allowUnsignedRelease = 'true'.equalsIgnoreCase(System.getenv('MX_ALLOW_UNSIGNED_RELEASE'))
 
+def microsoftClientId = System.getenv('MX_MICROSOFT_CLIENT_ID') ?: ''
+def microsoftRedirectUri = System.getenv('MX_MICROSOFT_REDIRECT_URI')
+if (microsoftRedirectUri == null || microsoftRedirectUri.trim().isEmpty()) {
+    microsoftRedirectUri = microsoftClientId.trim().isEmpty()
+            ? 'msal-unconfigured://auth'
+            : "msal${microsoftClientId}://auth"
+}
+def microsoftRedirectScheme = microsoftRedirectUri.contains(':')
+        ? microsoftRedirectUri.substring(0, microsoftRedirectUri.indexOf(':'))
+        : 'msal-unconfigured'
+def javaString = { String value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
+
 android {
     namespace 'au.com.t1xperts.mailxperts'
     compileSdk 36
@@ -17,8 +29,12 @@ android {
         applicationId 'au.com.t1xperts.mailxperts'
         minSdk 26
         targetSdk 36
-        versionCode 16
-        versionName '1.6.0-beta.2'
+        versionCode 17
+        versionName '1.6.0-beta.3'
+
+        buildConfigField 'String', 'MX_MICROSOFT_CLIENT_ID', javaString(microsoftClientId)
+        buildConfigField 'String', 'MX_MICROSOFT_REDIRECT_URI', javaString(microsoftRedirectUri)
+        manifestPlaceholders = [appAuthRedirectScheme: microsoftRedirectScheme]
     }
 
     signingConfigs {
@@ -53,6 +69,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -69,6 +89,8 @@ dependencies {
     implementation 'androidx.core:core:1.17.0'
     implementation 'com.sun.mail:android-mail:1.6.7'
     implementation 'com.sun.mail:android-activation:1.6.7'
+    implementation 'com.google.android.gms:play-services-auth:22.0.0'
+    implementation 'net.openid:appauth:0.11.1'
     testImplementation 'junit:junit:4.13.2'
 }
 

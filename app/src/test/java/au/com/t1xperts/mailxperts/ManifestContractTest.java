@@ -26,7 +26,6 @@ public class ManifestContractTest {
         assertTrue(manifest.matches("(?s).*SignatureEditorActivity\"\\s+android:exported=\"false\".*"));
     }
 
-
     @Test public void smartContactsIsPrivateAndContactsPermissionIsExplicit() throws Exception {
         String manifest = readProjectFile("src/main/AndroidManifest.xml",
                 "app/src/main/AndroidManifest.xml");
@@ -34,6 +33,15 @@ public class ManifestContractTest {
         assertTrue(manifest.contains("android.permission.READ_CONTACTS"));
         assertTrue(manifest.contains("android:name=\".SmartContactsActivity\""));
         assertTrue(manifest.matches("(?s).*SmartContactsActivity\"\\s+android:exported=\"false\".*"));
+    }
+
+    @Test public void oauthBrokerUsesApplicationContextAndPrivateActivity() throws Exception {
+        String manifest = readProjectFile("src/main/AndroidManifest.xml",
+                "app/src/main/AndroidManifest.xml");
+
+        assertTrue(manifest.contains("android:name=\".MailXpertsApplication\""));
+        assertTrue(manifest.contains("android:name=\".OAuthConnectActivity\""));
+        assertTrue(manifest.matches("(?s).*OAuthConnectActivity\"\\s+android:exported=\"false\".*"));
     }
 
     private static String readProjectFile(String modulePath, String rootPath) throws Exception {

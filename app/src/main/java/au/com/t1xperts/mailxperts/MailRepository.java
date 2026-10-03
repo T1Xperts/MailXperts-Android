@@ -232,7 +232,7 @@ final class MailRepository {
             token.throwIfStopped();
             store = session.getStore("imaps");
             token.attach(store, null);
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             token.throwIfStopped();
 
             folder = resolveFolder(store, kind, false);
@@ -400,7 +400,7 @@ final class MailRepository {
         Folder folder = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             folder = resolveFolder(store, kind, false);
             if (folder == null || !folder.exists()) return Collections.emptyList();
             folder.open(Folder.READ_ONLY);
@@ -444,7 +444,7 @@ final class MailRepository {
         ArrayList<Summary> out = new ArrayList<>();
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             SearchTerm term = spec.serverTerm();
             for (String folderKind : folders) {
                 searchFolder(account, store, folderKind, term, limitPerFolder, out);
@@ -501,7 +501,7 @@ final class MailRepository {
         Folder folder = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             folder = resolveFolder(store, kind, false);
             if (folder == null || !folder.exists()) throw new MessagingException("Mailbox folder is unavailable.");
             folder.open(markReadOnServer ? Folder.READ_WRITE : Folder.READ_ONLY);
@@ -525,7 +525,7 @@ final class MailRepository {
         Folder source = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             source = resolveFolder(store, sourceKind, false);
             if (source == null || !source.exists()) throw new MessagingException("Source mailbox is unavailable.");
             Folder destination = resolveFolder(store, spam ? JUNK : INBOX, true);
@@ -565,7 +565,7 @@ final class MailRepository {
         Folder source = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             source = resolveFolder(store, sourceKind, false);
             if (source == null || !source.exists()) {
                 throw new MessagingException("Source mailbox is unavailable.");
@@ -599,7 +599,7 @@ final class MailRepository {
                     local.subject, local.html);
             message.setFlag(Flags.Flag.DRAFT, true);
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             drafts = resolveFolder(store, DRAFTS, true);
             if (drafts == null || (!drafts.exists() && !drafts.create(Folder.HOLDS_MESSAGES))) {
                 throw new MessagingException("The provider did not expose a Drafts folder.");
@@ -644,7 +644,7 @@ final class MailRepository {
         Folder drafts = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             drafts = resolveFolder(store, DRAFTS, false);
             if (drafts == null || !drafts.exists()) return;
             drafts.open(Folder.READ_WRITE);
@@ -665,7 +665,7 @@ final class MailRepository {
         Transport transport = null;
         try {
             transport = session.getTransport("smtp");
-            transport.connect(account.smtpHost, account.smtpPort, account.username, account.password);
+            transport.connect(account.smtpHost, account.smtpPort, account.username, MailAuth.secret(account));
             Address[] recipients = message.getAllRecipients();
             if (recipients == null || recipients.length == 0) throw new MessagingException("No recipients were specified.");
             transport.sendMessage(message, recipients);
@@ -686,7 +686,7 @@ final class MailRepository {
         Store store = null;
         try {
             store = imap.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
         } catch (AuthenticationFailedException error) {
             throw connectionFailure(account, "IMAP", true, error);
         } catch (Exception error) {
@@ -699,7 +699,7 @@ final class MailRepository {
         Transport transport = null;
         try {
             transport = smtp.getTransport("smtp");
-            transport.connect(account.smtpHost, account.smtpPort, account.username, account.password);
+            transport.connect(account.smtpHost, account.smtpPort, account.username, MailAuth.secret(account));
         } catch (AuthenticationFailedException error) {
             throw connectionFailure(account, "SMTP", true, error);
         } catch (Exception error) {
@@ -712,11 +712,14 @@ final class MailRepository {
     private static MessagingException connectionFailure(
             AccountConfig account, String stage, boolean authentication, Exception error) {
         if (ProviderPreset.GMAIL.equals(account.provider)) {
+            if (authentication && AuthType.isOAuth(account.authType)) {
+                return new MessagingException(stage + " OAuth authentication failed. Reconnect "
+                        + "this Gmail account using Continue with Google.", error);
+            }
             if (authentication) {
                 return new MessagingException(stage + " authentication failed. Gmail rejected the "
-                        + "App Password. Use a current 16-character Google App Password generated "
-                        + "for this Google account; do not use the normal Google account password.",
-                        error);
+                        + "App Password. Use Continue with Google (recommended), or a current "
+                        + "16-character App Password where Google permits it.", error);
             }
             return new MessagingException(stage + " connection failed. Check your internet "
                     + "connection and try again. MailXperts is using Google's secure Gmail "
@@ -763,7 +766,7 @@ final class MailRepository {
         Folder sent = null;
         try {
             store = session.getStore("imaps");
-            store.connect(account.imapHost, account.imapPort, account.username, account.password);
+            store.connect(account.imapHost, account.imapPort, account.username, MailAuth.secret(account));
             sent = resolveFolder(store, SENT, true);
             if (!sent.exists() && !sent.create(Folder.HOLDS_MESSAGES)) {
                 throw new MessagingException("Could not create Sent folder.");
@@ -879,6 +882,7 @@ final class MailRepository {
         properties.put("mail.smtp.connectiontimeout", "15000");
         properties.put("mail.smtp.timeout", "30000");
         properties.put("mail.smtp.writetimeout", "30000");
+        MailAuth.configureSmtp(properties, account);
         return Session.getInstance(properties, new Authenticator() {
             @Override protected PasswordAuthentication getPasswordAuthentication() {
                 return new PasswordAuthentication(account.username, account.password);
@@ -896,6 +900,7 @@ final class MailRepository {
         properties.put("mail.imaps.timeout", String.valueOf(IMAP_READ_TIMEOUT_MS));
         properties.put("mail.imaps.writetimeout", String.valueOf(IMAP_WRITE_TIMEOUT_MS));
         properties.put("mail.imaps.connectionpoolsize", "1");
+        MailAuth.configureImap(properties, account);
         return Session.getInstance(properties);
     }
 
