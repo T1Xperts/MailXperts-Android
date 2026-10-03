@@ -1,0 +1,50 @@
+name: MX-QA-030 OAuth Integration
+
+on:
+  push:
+    branches:
+      - feature/mx-qa-030-oauth-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-and-validate:
+    if: ${{ !startsWith(github.event.head_commit.message, '[mx030-integrated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/mx-qa-030-oauth-foundation
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Apply MX-QA-030 integration patch
+        run: python3 tools/apply_mx030.py
+
+      - name: Validate debug build and tests
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+
+      - name: Commit validated integration
+        run: |
+          git config user.name "T1Xperts CI"
+          git config user.email "noreply@t1xperts.com.au"
+          git add app/src/main/java/au/com/t1xperts/mailxperts/SettingsActivity.java \
+                  app/src/main/java/au/com/t1xperts/mailxperts/MailRepository.java
+          if git diff --cached --quiet; then
+            echo "No integration changes to commit"
+            exit 0
+          fi
+          git commit -m "[mx030-integrated] Wire OAuth settings and XOAUTH2 transport"
+          git push origin HEAD:feature/mx-qa-030-oauth-foundation
