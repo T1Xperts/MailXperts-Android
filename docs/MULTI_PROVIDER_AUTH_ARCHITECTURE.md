@@ -2,6 +2,7 @@
 
 Status: **Implementation baseline merged in v1.6.0-beta.3; provider activation and live device UAT pending**
 Date: 3 Oct 2026
+Release notes: `RELEASE-NOTES-v1.6.0-beta.3.md`
 
 ## Objective
 
