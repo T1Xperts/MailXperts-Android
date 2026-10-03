@@ -23,6 +23,14 @@ MX-QA-030 provider authentication foundation for modern multi-provider email acc
 - No confidential OAuth client secret is committed to source or embedded in the mobile application.
 - Microsoft authorization uses Authorization Code + PKCE through AppAuth.
 
+## Automated QA evidence
+- PR #21 merged to `main` as `16153dc02ee14a62e9a613bf412a5f47267bbc45`.
+- PR Build MailXperts Android #53 / run `37122256291`: PASS.
+- PR P0 QA and APK Build #33 / run `37122256332`: PASS.
+- Main Build MailXperts Android #54 / run `37122426566`: `validate-debug` PASS.
+- Main P0 QA and APK Build #34 / run `37122426634`: PASS, including APK identity verification and artifact upload.
+- Protected signed-release job failed closed because repository secret `MX_KEYSTORE_BASE64` is not configured. No incorrectly signed production artifact was published.
+
 ## External activation prerequisites
 The implementation compiles and degrades safely without provider registrations, but live provider authorization requires provider-side configuration:
 
@@ -35,5 +43,7 @@ The implementation compiles and degrades safely without provider registrations, 
 - Build-time `MX_MICROSOFT_CLIENT_ID` and matching `MX_MICROSOFT_REDIRECT_URI`.
 - Delegated IMAP and SMTP permissions/consent subject to tenant policy.
 
-## QA scope
-Automated QA must cover account-model compatibility, provider capabilities, manifest privacy, lint, unit tests and debug APK assembly. Live Gmail and Microsoft authorization plus receive/send/background-sync remain physical-device/UAT gates because they require real provider registrations and user consent.
+## Remaining QA / UAT
+Live Gmail and Microsoft authorization, receive/send/background-sync, token refresh/re-consent and cross-provider physical-device regression remain UAT gates because they require real provider registrations and user consent.
+
+**Lifecycle status:** implementation merged and automated QA passed. MX-QA-030 remains open until provider activation and live device UAT pass.
