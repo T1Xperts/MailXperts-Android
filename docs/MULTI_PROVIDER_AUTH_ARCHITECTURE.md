@@ -1,6 +1,6 @@
 # MailXperts Multi-Provider Authentication Architecture
 
-Status: Architecture baseline for MX-QA-030
+Status: **Implementation baseline merged in v1.6.0-beta.3; provider activation and live device UAT pending**
 Date: 3 Oct 2026
 
 ## Objective
@@ -11,141 +11,119 @@ Replace provider-specific password assumptions with a provider-neutral authentic
 
 1. Authentication is a provider capability, not a single password field.
 2. OAuth 2.0 / OpenID Connect is preferred whenever the provider supports it.
-3. IMAP/SMTP transport is separate from authentication. OAuth tokens may authenticate standard IMAP/SMTP through SASL XOAUTH2.
+3. IMAP/SMTP transport is separate from authentication. OAuth tokens authenticate standards-based IMAP/SMTP through SASL XOAUTH2.
 4. Provider APIs may be used where they materially improve capabilities, but the core MailXperts mailbox model must not depend on a single provider API.
 5. Passwords, app-specific passwords, access tokens and refresh tokens are secrets. They must never be logged or embedded in source control.
 6. Long-lived secrets are protected using Android Keystore-backed encryption and separated from ordinary account metadata.
-7. Access tokens are short lived, refreshed transparently, and never treated as permanent credentials.
+7. Access tokens are short lived, refreshed/reacquired through provider-aware flows, and never treated as permanent credentials.
 8. Revocation, expiry, re-consent and provider policy changes are first-class states with actionable user recovery.
 9. Least-privilege scopes are requested. New scopes require explicit design and privacy review.
 10. Provider-specific code sits behind adapters so Gmail, Microsoft, Yahoo, iCloud and custom IMAP do not leak authentication logic into mailbox UI or message-processing code.
 
-## Target components
+## Implemented in v1.6.0-beta.3
 
-### AuthProvider
-Provider-neutral interface responsible for authentication method discovery, interactive sign-in, silent refresh, credential state, sign-out and recovery.
-
-Suggested providers: GoogleOAuthProvider, MicrosoftOAuthProvider, AppPasswordProvider and PasswordProvider.
-
-### AuthCredential
-Account authentication metadata represents the credential type rather than assuming `password`.
-
-Suggested fields: authType, providerId, principal, token expiry, granted scopes, provider account ID and re-authentication state. Secret token/password values live only in the protected secret store.
-
-### TokenVault
-A dedicated Android Keystore-backed secret store for OAuth refresh tokens, access tokens and password/app-password fallbacks. Ordinary account metadata remains separate.
-
-### MailTransportAuth
-Transport-level adapter obtains a current credential and applies it to the selected protocol. OAuth-capable IMAP/SMTP providers authenticate using SASL XOAUTH2, not by substituting access tokens into normal password logic.
-
-### ProviderCapabilities
-Replace the current single `oauthRequired` flag with capability metadata such as preferred/supported auth methods, IMAP/SMTP support, provider API support, contacts/calendar capability, special folder behaviour and server presets.
+- `AuthType` supports `OAUTH2`, `APP_PASSWORD` and `PASSWORD`.
+- `AccountConfig` no longer requires a password for OAuth-backed accounts.
+- `ProviderPreset` defines preferred/supported authentication capabilities per provider.
+- `CredentialVault` separates OAuth material from account metadata and encrypts it with an Android Keystore-managed AES-GCM key.
+- `MailAuth` resolves provider credentials and enables JavaMail SASL XOAUTH2 for IMAP and SMTP.
+- `GoogleOAuthManager` implements Google Identity authorization for the Gmail mail scope and silent access-token reacquisition when consent is still valid.
+- `MicrosoftOAuthManager` implements Authorization Code + PKCE, delegated IMAP/SMTP scopes, offline access and refresh-token renewal.
+- `OAuthConnectActivity` provides `Continue with Google` and `Continue with Microsoft` account flows and validates IMAP/SMTP after authorization.
+- `SettingsActivity` presents OAuth as the recommended Gmail route and the required Microsoft route while retaining Gmail App Password fallback.
+- Existing T1Xperts/custom IMAP accounts and Yahoo/iCloud app-password paths are preserved.
+- Existing account IDs, settings, signatures and local cache ownership remain stable during authentication migration.
 
 ## Provider strategy
 
 | Provider | Primary authentication | Mail transport | Fallback |
 |---|---|---|---|
-| Google Gmail / Workspace | OAuth 2.0 / Sign in with Google | IMAP + SMTP using XOAUTH2 initially | App Password only where account policy permits it |
-| Microsoft Outlook.com / Microsoft 365 | Microsoft identity OAuth 2.0 | OAuth-enabled IMAP/SMTP initially; Microsoft Graph may be introduced for richer provider capabilities | No normal-password Basic Auth dependency |
-| Yahoo | OAuth where implemented/supported | IMAP/SMTP | Provider-generated app password where supported |
-| Apple iCloud Mail | Apple-supported account/app-specific-password route | IMAP/SMTP | App-specific password |
+| Google Gmail / Workspace | OAuth 2.0 / Continue with Google | IMAP + SMTP using XOAUTH2 | App Password only where account policy permits it |
+| Microsoft Outlook.com / Microsoft 365 | Microsoft identity OAuth 2.0 | OAuth-enabled IMAP/SMTP using XOAUTH2 | No normal-password Basic Auth dependency |
+| Yahoo | Provider-supported app password / future OAuth adapter | IMAP/SMTP | Provider app password |
+| Apple iCloud Mail | Apple-supported app-specific-password route | IMAP/SMTP | App-specific password |
 | T1Xperts / hosted IMAP | Mailbox credential | IMAP/SMTP over TLS | Provider/admin-defined |
 | Other custom IMAP | Capability-driven credential | IMAP/SMTP over TLS | Provider-defined |
 
-## Google implementation baseline
+## Google activation gate
 
-- Register T1Xperts Android OAuth client and Google OAuth consent configuration.
-- Use Authorization Code with PKCE / platform-appropriate Google identity libraries.
-- Request only required scopes.
-- Authenticate Gmail IMAP/SMTP with OAuth access tokens through SASL XOAUTH2.
-- Implement refresh-token renewal and re-consent handling.
-- Keep App Password as optional fallback during transition.
-- Never request the normal Google account password.
+The application implementation is present, but live Google authorization requires provider-side configuration:
 
-## Microsoft implementation baseline
+- Google Cloud / Android OAuth application registration for package `au.com.t1xperts.mailxperts` and the production signing identity.
+- Gmail mail scope (`https://mail.google.com/`) enabled and consent/verification configured as required by Google.
+- Physical-device validation of sign-in, IMAP receive, SMTP send, background sync and re-consent behaviour.
 
-- Register MailXperts in Microsoft Entra ID.
-- Use Microsoft Authentication Library / OAuth authorization-code flow suitable for Android.
-- Support Outlook.com and Microsoft 365 delegated user authentication.
-- Use delegated IMAP/SMTP OAuth permissions and SASL XOAUTH2 for protocol transport.
-- Request offline access when refresh tokens are required.
-- Evaluate Microsoft Graph for richer Microsoft-specific mail/contact/calendar capabilities while retaining a provider-neutral core.
-- Do not create new Basic Auth dependencies.
+The normal Google password is never requested for OAuth mode.
 
-## iCloud / app-password providers
+## Microsoft activation gate
 
-- Keep app-specific password support behind AppPasswordProvider.
-- Treat iCloud as IMAP/SMTP with provider-specific server and username rules.
-- Store app-specific passwords in the secret vault, never logs or analytics.
-- Explicitly distinguish app-specific passwords from the user's main account password.
+The application implementation is present, but live Microsoft authorization requires:
+
+- Microsoft Entra public-client application registration.
+- Build-time `MX_MICROSOFT_CLIENT_ID` and matching `MX_MICROSOFT_REDIRECT_URI`.
+- Delegated IMAP/SMTP permissions and consent subject to tenant policy.
+- Physical-device validation of Outlook.com/Microsoft 365 sign-in, receive, send, refresh and background sync.
+
+No confidential client secret is embedded in the Android APK.
 
 ## Account setup UX
 
-1. Choose provider.
-2. OAuth providers show `Continue with Google` or `Continue with Microsoft`.
-3. Complete provider consent in the system browser/provider SDK.
-4. Return to MailXperts and validate mailbox connectivity.
-5. Persist non-secret metadata and protected tokens separately.
-6. Open mailbox.
+Google:
+`Add Account → Google Gmail → Continue with Google → consent → mailbox validation → Inbox`
 
-Custom/app-password providers show only fields required by that provider. Normal Google/Microsoft setup must not expose IMAP/SMTP host fields unless troubleshooting/advanced settings are opened.
+Microsoft:
+`Add Account → Outlook / Microsoft 365 → Continue with Microsoft → consent → mailbox validation → Inbox`
 
-## Error model
-
-Use structured authentication errors rather than raw provider text: NETWORK_UNAVAILABLE, TLS_FAILURE, AUTH_REJECTED, TOKEN_EXPIRED, TOKEN_REFRESH_FAILED, CONSENT_REQUIRED, PROVIDER_POLICY_BLOCK, SMTP_DISABLED_BY_TENANT, IMAP_DISABLED_BY_TENANT, SERVER_UNAVAILABLE and CONFIGURATION_ERROR.
-
-UI maps these to safe, actionable messages. Sanitised diagnostics may be logged without credentials/tokens.
-
-## Migration
-
-- Existing password/app-password accounts retain their credential type.
-- Gmail accounts may migrate from APP_PASSWORD to OAUTH2 without deleting local mail/settings.
-- Microsoft accounts move to OAUTH2.
-- Account IDs and local cache ownership remain stable through migration.
-- Package/signing identity remain unchanged.
+Custom/app-password providers show only their relevant credential/server path. Advanced server values remain available for standards-based troubleshooting.
 
 ## Security requirements
 
 - No confidential-client secret embedded in APK.
-- PKCE for public mobile-client flows.
-- Validate redirect URI/app-link handling and provider state/nonce requirements.
-- Tokens/passwords encrypted at rest with Android Keystore-backed keys.
+- PKCE for Microsoft public mobile-client authorization.
+- Provider redirect/consent configuration must match the production application identity.
+- Tokens/passwords encrypted at rest using Android Keystore-backed keys.
 - Never log passwords, app passwords, bearer tokens, refresh tokens or authorization codes.
-- Redact provider error payloads before telemetry.
-- Sign-out clears local credentials; provider revocation offered where supported.
-- Threat-model token theft, malicious redirects, intent interception and backup/restore.
+- OAuth secrets are not persisted in ordinary account JSON.
+- Deleting/forgetting account credentials clears the OAuth vault entry.
+- Provider registration, scopes and consent settings are release/security artefacts, not source-code secrets.
 
-## Delivery phases
+## QA evidence
 
-### Phase A - Provider-neutral auth core
-Refactor AccountConfig away from mandatory password semantics; add auth type/capabilities/provider adapters; add TokenVault; add structured auth result/error model.
+### Pull request
+- PR #21: `MX-QA-030: Multi-provider OAuth authentication foundation`
+- Merged to `main` as `16153dc02ee14a62e9a613bf412a5f47267bbc45`
 
-### Phase B - Google OAuth2
-Google registration/consent, Continue with Google, OAuth/token refresh, Gmail IMAP/SMTP XOAUTH2, receive/send/background-sync QA, App Password fallback retained.
+### PR validation
+- Build MailXperts Android #53 / run `37122256291`: PASS
+- P0 QA and APK Build #33 / run `37122256332`: PASS
 
-### Phase C - Microsoft OAuth2
-Entra registration, Continue with Microsoft, OAuth/token refresh, Outlook.com and Microsoft 365 IMAP/SMTP XOAUTH2, tenant-policy errors, receive/send/background-sync QA.
+### Main validation
+- Build MailXperts Android #54 / run `37122426566`: `validate-debug` PASS
+- P0 QA and APK Build #34 / run `37122426634`: PASS, including APK identity verification and evidence upload
+- Protected `signed-release` job failed closed before build because GitHub secret `MX_KEYSTORE_BASE64` is still missing. No incorrectly signed production artifact was published.
 
-### Phase D - Remaining providers
-Formalise Yahoo and iCloud app-password adapters; preserve T1Xperts/custom IMAP password support; complete capability matrix and regression tests.
+Automated tests include provider capability rules, OAuth account usability without passwords, legacy fallback preservation, token-expiry handling, private OAuth activity/application manifest wiring, and v1.6.0-beta.3 release identity.
 
-### Phase E - Optional provider APIs
-Use Gmail API or Microsoft Graph only where provider-specific capabilities justify them. Contacts/calendar use separate scopes and explicit consent. Core mail operations remain behind provider-neutral interfaces.
+## Remaining Definition of Done gates
 
-## Definition of Done for MX-QA-030
-
-- Gmail can be added through OAuth without the user's Google password.
-- Gmail receive, send and background sync pass on a physical Android device.
-- Outlook.com can be added through Microsoft OAuth.
-- Microsoft 365 delegated accounts can be added subject to tenant policy.
-- Microsoft receive, send and background sync pass on device.
-- Token refresh works across access-token expiry.
-- Revoked/expired consent triggers actionable re-authentication.
-- No password/token is logged or committed.
-- Existing T1Xperts/custom IMAP continues working.
-- iCloud/app-password flows remain functional.
-- Migration preserves local settings, cache and account identity.
-- Unit, integration, regression, device QA and Product Owner UAT pass.
+- [x] Provider-neutral authentication model implemented.
+- [x] Android Keystore-backed OAuth credential vault implemented.
+- [x] Gmail OAuth authorization code path implemented.
+- [x] Gmail IMAP/SMTP XOAUTH2 transport implemented.
+- [x] Gmail App Password fallback retained.
+- [x] Microsoft OAuth2/PKCE flow implemented.
+- [x] Microsoft IMAP/SMTP XOAUTH2 transport implemented.
+- [x] Microsoft refresh-token logic implemented.
+- [x] Existing standards-based provider paths preserved in code and automated regression.
+- [x] Pull-request and main-branch automated QA passed.
+- [ ] Google provider registration/consent activation completed.
+- [ ] Gmail OAuth sign-in passes on physical Android device.
+- [ ] Gmail receive/send/background sync pass on device.
+- [ ] Microsoft Entra public-client registration activated in the build.
+- [ ] Outlook.com/Microsoft 365 sign-in and mail transport pass on device.
+- [ ] Token refresh/re-consent scenarios pass live-provider QA.
+- [ ] Cross-provider physical-device regression passes.
+- [ ] Product Owner UAT passes for MX-QA-030.
 
 ## Historical note
 
