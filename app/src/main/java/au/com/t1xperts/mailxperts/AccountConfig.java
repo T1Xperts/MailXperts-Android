@@ -8,6 +8,7 @@ final class AccountConfig {
 
     String id = UUID.randomUUID().toString();
     String provider = ProviderPreset.T1XPERTS;
+    String authType = AuthType.PASSWORD;
     // Account identity must never be pre-populated for a newly-created account.
     // Existing accounts are restored only from SecureStore when an explicit account ID is edited.
     String label = "";
@@ -18,6 +19,7 @@ final class AccountConfig {
     String smtpHost = "t1xperts.com.au";
     int smtpPort = 465;
     String smtpSecurity = SMTP_SSL;
+    // Used only for PASSWORD / APP_PASSWORD. OAuth tokens live in CredentialVault.
     String password = "";
     boolean syncEnabled = true;
     int syncIntervalMinutes = SyncPolicy.DEFAULT_INTERVAL_MINUTES;
@@ -29,6 +31,8 @@ final class AccountConfig {
     String signatureHtml = "";
 
     boolean isUsable() {
+        boolean authReady = AuthType.isOAuth(authType)
+                || (password != null && !password.isEmpty());
         return id != null && !id.trim().isEmpty()
                 && email != null && !email.trim().isEmpty()
                 && username != null && !username.trim().isEmpty()
@@ -36,7 +40,7 @@ final class AccountConfig {
                 && imapPort > 0
                 && smtpHost != null && !smtpHost.trim().isEmpty()
                 && smtpPort > 0
-                && password != null && !password.isEmpty();
+                && authReady;
     }
 
     String displayName() {
