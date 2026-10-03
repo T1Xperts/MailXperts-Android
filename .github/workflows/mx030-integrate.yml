@@ -12,6 +12,7 @@ jobs:
   integrate-and-validate:
     if: ${{ !startsWith(github.event.head_commit.message, '[mx030-integrated]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout feature branch
         uses: actions/checkout@v4
@@ -27,6 +28,14 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Apply MX-QA-030 integration patch
         run: python3 tools/apply_mx030.py
@@ -34,7 +43,7 @@ jobs:
       - name: Validate debug build and tests
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+          ./gradlew --no-daemon --stacktrace clean lintDebug testDebugUnitTest assembleDebug
 
       - name: Commit validated integration
         run: |
