@@ -72,7 +72,7 @@ public class MailboxActivity extends Activity {
 
         String subtitleText = allAccounts
                 ? "All Accounts  •  " + accounts.size() + " connected  •  Unified mailboxes"
-                : ProviderPreset.find(account.provider).name + "  •  Secure IMAP/SMTP";
+                : AccountIdentity.subtitle(account);
         TextView subtitle = Ui.text(this, subtitleText);
         subtitle.setTextColor(Ui.muted(this));
         root.addView(subtitle);
@@ -136,7 +136,7 @@ public class MailboxActivity extends Activity {
         title.setPadding(Ui.dp(this, 10), 0, Ui.dp(this, 8), 0);
         header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         Spinner spinner = accountSpinner();
-        header.addView(spinner, new LinearLayout.LayoutParams(Ui.dp(this, 168), Ui.dp(this, 52)));
+        header.addView(spinner, new LinearLayout.LayoutParams(Ui.dp(this, 210), Ui.dp(this, 52)));
         return header;
     }
 
@@ -167,25 +167,29 @@ public class MailboxActivity extends Activity {
 
     private Spinner accountSpinner() {
         ArrayList<AccountChoice> choices = new ArrayList<>();
-        choices.add(new AccountChoice(CHOICE_ALL, null, "All Accounts"));
+        choices.add(AccountChoice.action(CHOICE_ALL, "All Accounts"));
         int selectedIndex = allAccounts ? 0 : 1;
         for (int i = 0; i < accounts.size(); i++) {
             AccountConfig configured = accounts.get(i);
-            choices.add(new AccountChoice(CHOICE_ACCOUNT, configured, configured.displayName()));
+            choices.add(AccountChoice.account(configured));
             if (!allAccounts && configured.id.equals(accountId)) selectedIndex = i + 1;
         }
-        choices.add(new AccountChoice(CHOICE_ADD, null, "＋ Add new mail account"));
-        choices.add(new AccountChoice(CHOICE_MANAGE, null, "Manage accounts"));
+        choices.add(AccountChoice.action(CHOICE_ADD, "＋ Add new mail account"));
+        choices.add(AccountChoice.action(CHOICE_MANAGE, "Manage accounts"));
         final int activeIndex = selectedIndex;
 
         ArrayAdapter<AccountChoice> adapter = new ArrayAdapter<AccountChoice>(
                 this, android.R.layout.simple_spinner_item, choices) {
             private TextView decorate(View view, int position, boolean dropdown) {
                 TextView text = (TextView) view;
+                AccountChoice choice = choices.get(position);
+                text.setText(dropdown ? choice.dropdownLabel : choice.compactLabel);
                 text.setTextColor(Ui.textColor(MailboxActivity.this));
                 text.setTextSize(dropdown ? 15 : 13);
                 text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-                int vertical = dropdown ? Ui.dp(MailboxActivity.this, 15) : 0;
+                text.setMaxLines(dropdown ? 2 : 1);
+                text.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                int vertical = dropdown ? Ui.dp(MailboxActivity.this, 12) : 0;
                 text.setPadding(Ui.dp(MailboxActivity.this, 10), vertical,
                         Ui.dp(MailboxActivity.this, 8), vertical);
                 if (dropdown) text.setBackgroundColor(Ui.panel(MailboxActivity.this));
@@ -275,6 +279,7 @@ public class MailboxActivity extends Activity {
         intent.putExtra("local_type", type);
         startActivity(intent);
     }
+
     private String appVersion() {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
@@ -282,7 +287,6 @@ public class MailboxActivity extends Activity {
             return "1.6.0-beta.1";
         }
     }
-
 
     private void requestNotificationPermission() {
         boolean enabled = false;
@@ -298,12 +302,28 @@ public class MailboxActivity extends Activity {
     private static final class AccountChoice {
         final int type;
         final AccountConfig account;
-        final String label;
-        AccountChoice(int type, AccountConfig account, String label) {
+        final String compactLabel;
+        final String dropdownLabel;
+
+        private AccountChoice(int type, AccountConfig account, String compactLabel, String dropdownLabel) {
             this.type = type;
             this.account = account;
-            this.label = label;
+            this.compactLabel = compactLabel;
+            this.dropdownLabel = dropdownLabel;
         }
-        @Override public String toString() { return label; }
+
+        static AccountChoice account(AccountConfig account) {
+            return new AccountChoice(
+                    CHOICE_ACCOUNT,
+                    account,
+                    AccountIdentity.compact(account),
+                    AccountIdentity.dropdown(account));
+        }
+
+        static AccountChoice action(int type, String label) {
+            return new AccountChoice(type, null, label, label);
+        }
+
+        @Override public String toString() { return compactLabel; }
     }
 }
