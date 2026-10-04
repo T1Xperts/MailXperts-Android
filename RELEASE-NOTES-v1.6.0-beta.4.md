@@ -14,3 +14,4 @@
 - P0 regression workflow passed.
 - Production package remains `au.com.t1xperts.mailxperts`.
 - This build uses versionCode 18 so it upgrades v1.6.0-beta.3/versionCode 17.
+- Production release signing is invoked only through the protected release pipeline or the established offline signing baseline.
