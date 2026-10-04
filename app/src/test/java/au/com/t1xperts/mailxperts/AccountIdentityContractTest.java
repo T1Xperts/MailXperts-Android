@@ -15,8 +15,9 @@ public class AccountIdentityContractTest {
                 "src/main/java/au/com/t1xperts/mailxperts/MailboxActivity.java",
                 "app/src/main/java/au/com/t1xperts/mailxperts/MailboxActivity.java");
         assertTrue(source.contains("AccountIdentity.subtitle(account)"));
-        assertTrue(source.contains("AccountIdentity.compact(configured)"));
-        assertTrue(source.contains("AccountIdentity.dropdown(configured)"));
+        assertTrue(source.contains("AccountIdentity.compact(account)"));
+        assertTrue(source.contains("AccountIdentity.dropdown(account)"));
+        assertTrue(source.contains("AccountChoice.account(configured)"));
     }
 
     private static String readProjectFile(String modulePath, String rootPath) throws Exception {
