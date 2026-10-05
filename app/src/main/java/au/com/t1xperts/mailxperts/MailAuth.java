@@ -30,6 +30,9 @@ final class MailAuth {
     static void configureImap(Properties properties, AccountConfig account) {
         if (!AuthType.isOAuth(account.authType)) return;
         properties.put("mail.imaps.auth.mechanisms", "XOAUTH2");
+        // JavaMail documents XOAUTH2 as disabled by default. auth.mechanisms should override that,
+        // but set the switch explicitly as well so Android Mail cannot fall back to LOGIN/PLAIN.
+        properties.put("mail.imaps.auth.xoauth2.disable", "false");
         properties.put("mail.imaps.auth.login.disable", "true");
         properties.put("mail.imaps.auth.plain.disable", "true");
     }
@@ -37,6 +40,7 @@ final class MailAuth {
     static void configureSmtp(Properties properties, AccountConfig account) {
         if (!AuthType.isOAuth(account.authType)) return;
         properties.put("mail.smtp.auth.mechanisms", "XOAUTH2");
+        properties.put("mail.smtp.auth.xoauth2.disable", "false");
         properties.put("mail.smtp.auth.login.disable", "true");
         properties.put("mail.smtp.auth.plain.disable", "true");
     }
