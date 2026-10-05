@@ -3,6 +3,7 @@ package au.com.t1xperts.mailxperts;
 import android.content.Context;
 import android.text.Editable;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
