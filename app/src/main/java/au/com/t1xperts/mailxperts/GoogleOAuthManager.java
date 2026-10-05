@@ -13,12 +13,13 @@ import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Tasks;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /** Google Identity Services authorization for Gmail IMAP/SMTP XOAUTH2. */
 final class GoogleOAuthManager {
     static final String MAIL_SCOPE = "https://mail.google.com/";
+    static final String EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
     private static final long ACCESS_TOKEN_CACHE_MS = 50L * 60L * 1000L;
 
     interface Callback {
@@ -81,8 +82,13 @@ final class GoogleOAuthManager {
     }
 
     private static AuthorizationRequest request() {
+        // Request the mailbox scope plus the minimum identity scope needed to bind the returned
+        // token to the Gmail address being configured. This prevents a token for one Google
+        // account from being silently tested against a stale username from another account.
         return AuthorizationRequest.builder()
-                .setRequestedScopes(Collections.singletonList(new Scope(MAIL_SCOPE)))
+                .setRequestedScopes(Arrays.asList(
+                        new Scope(MAIL_SCOPE),
+                        new Scope(EMAIL_SCOPE)))
                 .build();
     }
 
@@ -96,7 +102,7 @@ final class GoogleOAuthManager {
         try {
             if (result.toGoogleSignInAccount() != null
                     && result.toGoogleSignInAccount().getEmail() != null) {
-                email = result.toGoogleSignInAccount().getEmail();
+                email = result.toGoogleSignInAccount().getEmail().trim();
             }
         } catch (Exception ignored) {}
         callback.onAuthorized(email, token, System.currentTimeMillis() + ACCESS_TOKEN_CACHE_MS);
