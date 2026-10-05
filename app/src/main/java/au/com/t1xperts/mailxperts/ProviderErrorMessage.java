@@ -23,12 +23,32 @@ final class ProviderErrorMessage {
         boolean gmail = ProviderPreset.GMAIL.equals(provider);
         boolean outlook = ProviderPreset.OUTLOOK.equals(provider);
 
+        // Keep this mapper idempotent. Several UI paths may receive text that has already been
+        // converted into a safe user-facing explanation; a second pass must not erase detail.
+        if (isFriendlyMessage(lower)) return message;
+
         if (lower.contains("cancelled") || lower.contains("canceled")) {
             return "Authorization was cancelled. No account changes were made.";
         }
         if (lower.contains("does not use oauth")) return "This provider does not use OAuth in MailXperts.";
         if (lower.contains("not configured") && outlook) {
             return "Microsoft sign-in is not configured for this build yet. Add the registered Microsoft client ID and redirect URI, then rebuild MailXperts.";
+        }
+        if (gmail && (lower.contains("developer_error")
+                || lower.contains("api_exception: 10")
+                || lower.matches(".*(^|[^0-9])10:.*"))) {
+            return "Google sign-in configuration does not match this MailXperts build. Install the official production-signed APK and verify the Android OAuth package/signing certificate registration.";
+        }
+        if (lower.contains("network_error") || lower.contains("api_exception: 7")) {
+            return "Google sign-in could not reach Google services. Check the internet connection and Google Play services, then try again.";
+        }
+        if (lower.contains("consent_required")) {
+            if (gmail) return "Google needs Gmail permission again. Tap Continue with Google and approve Gmail access.";
+            return "The provider needs authorization again. Reconnect the account and approve access.";
+        }
+        if (lower.contains("did not return an oauth access token")) {
+            if (gmail) return "Google sign-in completed without a usable Gmail access token. Tap Continue with Google and approve Gmail access again.";
+            return "The provider did not return a usable OAuth access token. Reconnect the account and try again.";
         }
         if (lower.contains("invalid_grant") || lower.contains("token has been expired")
                 || lower.contains("token expired") || lower.contains("revoked")) {
@@ -37,10 +57,17 @@ final class ProviderErrorMessage {
             return "The provider authorization expired or was revoked. Reconnect this account and try again.";
         }
         if (lower.contains("authenticationfailed") || lower.contains("authentication failed")
+                || lower.contains("oauth authentication failed")
                 || lower.contains("invalid credentials") || lower.contains("username and password not accepted")
                 || lower.contains("web login required") || lower.contains("535") || lower.contains("534")) {
             if (gmail && oauth) {
-                return "Google rejected the mailbox sign-in. Reconnect with Continue with Google and approve Gmail access.";
+                if (lower.contains("smtp")) {
+                    return "Google authorization completed, but Gmail rejected SMTP OAuth mail sending. Reconnect with Continue with Google and approve Gmail access.";
+                }
+                if (lower.contains("imap")) {
+                    return "Google authorization completed, but Gmail rejected IMAP OAuth mailbox access. Reconnect with Continue with Google and approve Gmail access.";
+                }
+                return "Google rejected the mailbox OAuth sign-in. Reconnect with Continue with Google and approve Gmail access.";
             }
             if (gmail) {
                 return "Google rejected the App Password. Use Continue with Google (recommended), or create a fresh 16-character App Password after enabling 2-Step Verification.";
@@ -68,5 +95,30 @@ final class ProviderErrorMessage {
         }
         if (message.isEmpty()) return "Mail account connection failed. Check the account settings and try again.";
         return "Mail account connection failed. Check the account settings or reconnect the provider, then try again.";
+    }
+
+    private static boolean isFriendlyMessage(String lower) {
+        return lower.startsWith("authorization was cancelled")
+                || lower.startsWith("this provider does not use oauth")
+                || lower.startsWith("microsoft sign-in is not configured")
+                || lower.startsWith("google sign-in configuration does not match")
+                || lower.startsWith("google sign-in could not reach")
+                || lower.startsWith("google needs gmail permission again")
+                || lower.startsWith("google sign-in completed without")
+                || lower.startsWith("google authorization has expired")
+                || lower.startsWith("microsoft authorization has expired")
+                || lower.startsWith("the provider authorization expired")
+                || lower.startsWith("google authorization completed")
+                || lower.startsWith("google rejected the mailbox")
+                || lower.startsWith("google rejected the app password")
+                || lower.startsWith("microsoft rejected the mailbox")
+                || lower.startsWith("the mail provider rejected")
+                || lower.startsWith("could not reach the mail server")
+                || lower.startsWith("mailxperts could not verify")
+                || lower.startsWith("imap access is disabled")
+                || lower.startsWith("use continue with google")
+                || lower.startsWith("google account mismatch")
+                || lower.startsWith("google sign-in completed, but mailxperts could not confirm")
+                || lower.startsWith("mail account connection failed");
     }
 }
