@@ -14,9 +14,9 @@ public class ReleaseIdentityContractTest {
         String gradle = readProjectFile("build.gradle", "app/build.gradle");
 
         assertTrue(gradle.contains("applicationId 'au.com.t1xperts.mailxperts'"));
-        assertTrue("Beta must advance beyond the v1.6.0-beta.3 versionCode",
-                gradle.contains("versionCode 18"));
-        assertTrue(gradle.contains("versionName '1.6.0-beta.4'"));
+        assertTrue("Beta must advance beyond the v1.6.0-beta.4 versionCode",
+                gradle.contains("versionCode 19"));
+        assertTrue(gradle.contains("versionName '1.6.0-beta.5'"));
         assertTrue(gradle.contains("applicationIdSuffix '.dev'"));
     }
 

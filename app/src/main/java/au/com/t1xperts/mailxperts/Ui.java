@@ -158,16 +158,19 @@ final class Ui {
     }
 
     static MultiAutoCompleteTextView recipientEdit(Context context, String hint) {
-        MultiAutoCompleteTextView edit = new MultiAutoCompleteTextView(context);
+        MultiAutoCompleteTextView edit = new RecipientChipAutoCompleteTextView(context);
         edit.setHint(hint);
         edit.setHintTextColor(muted(context));
         edit.setTextColor(textColor(context));
         edit.setTextSize(16);
-        edit.setSingleLine(true);
+        edit.setSingleLine(false);
+        edit.setMaxLines(3);
+        edit.setHorizontallyScrolling(false);
         edit.setThreshold(1);
-        edit.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+        edit.setTokenizer(new RecipientChipAutoCompleteTextView.RecipientTokenizer(context));
         edit.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         edit.setPadding(dp(context, 12), dp(context, 11), dp(context, 12), dp(context, 11));
         edit.setBackground(rounded(panel(context),
                 Color.parseColor(ThemeManager.isDark(context) ? "#31535A" : "#B7D6D8"),

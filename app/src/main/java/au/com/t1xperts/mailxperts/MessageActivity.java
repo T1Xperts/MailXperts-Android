@@ -97,6 +97,8 @@ public class MessageActivity extends Activity {
         root.addView(top);
 
         header = Ui.text(this, "Loading…");
+        header.setTextIsSelectable(true);
+        header.setContentDescription("Message sender and recipient details. Long press to select and copy.");
         root.addView(header);
         details = Ui.compactButton(this, "Show message details");
         details.setEnabled(false);

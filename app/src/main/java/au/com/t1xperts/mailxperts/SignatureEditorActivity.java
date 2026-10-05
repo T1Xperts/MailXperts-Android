@@ -45,8 +45,8 @@ public class SignatureEditorActivity extends Activity {
                 "Use Rich Text for visual editing or HTML Source for exact markup. "
                         + "Image accepts local/shared PNG, JPEG, GIF or WebP files; Image URL "
                         + "keeps an http/https link in the outgoing signature. Linked images "
-                        + "are blocked in this secure editor preview and load in compatible "
-                        + "mail clients after sending.");
+                        + "are previewed securely here while navigation, scripts outside the editor, "
+                        + "local file access and persistent web storage remain restricted.");
         note.setTextColor(Ui.muted(this));
         note.setTextSize(13);
         root.addView(note);
@@ -57,8 +57,9 @@ public class SignatureEditorActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        settings.setBlockNetworkLoads(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setBlockNetworkLoads(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setSafeBrowsingEnabled(true);
         fontBridge = new EditorSupport.FontBridge();
         imageBridge = new EditorSupport.ImageBridge(this, PICK_SIGNATURE_IMAGE);
         editor.addJavascriptInterface(fontBridge, "MailXpertsFonts");

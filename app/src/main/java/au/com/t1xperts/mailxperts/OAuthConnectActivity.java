@@ -118,8 +118,7 @@ public final class OAuthConnectActivity extends Activity {
                     finish();
                 });
             } catch (Exception error) {
-                showError("OAuth sign-in completed, but mailbox validation failed: "
-                        + MailRepository.safe(error));
+                showError(ProviderErrorMessage.forAccount(account, error));
             }
         });
     }
@@ -152,7 +151,8 @@ public final class OAuthConnectActivity extends Activity {
         runOnUiThread(() -> {
             Ui.setEnabled(connect, true, connectLabel(), "");
             status.setTextColor(Ui.error(this));
-            status.setText(message == null ? "Authentication failed." : message);
+            status.setText(ProviderErrorMessage.forProvider(
+                    account == null ? "" : account.provider, message));
         });
     }
 
