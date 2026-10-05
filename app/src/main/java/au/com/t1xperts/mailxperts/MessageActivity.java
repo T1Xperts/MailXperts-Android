@@ -262,277 +262,501 @@ public class MessageActivity extends Activity {
         }
     }
 
-    private void appendHeaderDetail(StringBuilder text, String key) {
-        if (loaded == null || loaded.headers == null) return;
-        String value = loaded.headers.get(key);
-        if (value != null && !value.trim().isEmpty()) {
-            text.append("\n").append(key).append(": ").append(value.trim());
+    private void appendHeaderDetail(StringBuilder text, String name) {
+        String value = headerValue(name);
+        if (!value.isEmpty()) text.append("\n").append(name).append(": ").append(value);
+    }
+
+    private void showOverflow(View anchor) {
+        if (loaded == null) return;
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenu().add(0, 1, 0, "Print / Save as PDF");
+        popup.getMenu().add(0, 2, 1, account.deleteFromServer
+                ? "Delete — move to server Trash" : "Delete on this device");
+        if (!MailRepository.SENT.equals(kind)) {
+            popup.getMenu().add(0, 3, 2, MailRepository.JUNK.equals(kind) ? "Not spam" : "Mark spam");
+            popup.getMenu().add(0, 4, 3, "External abuse report…");
         }
+        popup.getMenu().add(0, 5, 4, "Share message");
+        popup.getMenu().add(0, 6, 5, "View full headers");
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1: printMessage(); return true;
+                case 2: confirmDelete(); return true;
+                case 3: confirmSpam(); return true;
+                case 4: reportOptions(); return true;
+                case 5: shareMessage(); return true;
+                case 6: viewHeaders(); return true;
+                default: return false;
+            }
+        });
+        popup.show();
+    }
+
+    private void reply() {
+        if (loaded == null) return;
+        Intent intent = new Intent(this, ComposeActivity.class);
+        intent.putExtra("account_id", accountId);
+        String replyTo = headerValue("Reply-To");
+        intent.putExtra("to", extract(replyTo.isEmpty() ? loaded.from : replyTo));
+        String subject = loaded.subject == null ? "" : loaded.subject;
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
+        startActivity(intent);
+    }
+
+    private void replyAll() {
+        if (loaded == null) return;
+        String replyTarget = headerValue("Reply-To");
+        if (replyTarget.isEmpty()) replyTarget = loaded.from;
+        String toRecipients = uniqueRecipients(replyTarget, loaded.to);
+        String ccRecipients = uniqueRecipients(headerValue("Cc"));
+        ccRecipients = subtractRecipients(ccRecipients, toRecipients);
+        if (toRecipients.isEmpty()) toRecipients = extract(replyTarget);
+        Intent intent = new Intent(this, ComposeActivity.class);
+        intent.putExtra("account_id", accountId);
+        intent.putExtra("to", toRecipients);
+        if (!ccRecipients.isEmpty()) intent.putExtra("cc", ccRecipients);
+        String subject = loaded.subject == null ? "" : loaded.subject;
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
+        startActivity(intent);
+    }
+
+    private void forward() {
+        if (loaded == null) return;
+        Intent intent = new Intent(this, ComposeActivity.class);
+        intent.putExtra("account_id", accountId);
+        String subject = loaded.subject == null ? "" : loaded.subject;
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        intent.putExtra("subject", ReplyForwardFormatter.forwardSubject(subject));
+        intent.putExtra("initial_html", ReplyForwardFormatter.forwardChain(
+                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
+        startActivity(intent);
+    }
+
+    private void renderAttachments() {
+        attachmentList.removeAllViews();
+        if (incomingAttachments == null || incomingAttachments.isEmpty()) {
+            attachmentList.setVisibility(View.GONE);
+            return;
+        }
+        attachmentList.setVisibility(View.VISIBLE);
+        attachmentList.addView(Ui.label(this, "ATTACHMENTS (" + incomingAttachments.size() + ")"));
+        for (MailAttachmentRepository.IncomingAttachment attachment : incomingAttachments) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView label = Ui.text(this, "📎 " + attachment.fileName + " • "
+                    + AttachmentStorage.displaySize(attachment.size));
+            row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            Button more = Ui.compactButton(this, "⋮");
+            more.setContentDescription("Attachment options for " + attachment.fileName);
+            more.setOnClickListener(v -> attachmentOptions(attachment));
+            row.addView(more, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 42)));
+            attachmentList.addView(row);
+        }
+    }
+
+    private void attachmentOptions(MailAttachmentRepository.IncomingAttachment attachment) {
+        new AlertDialog.Builder(this)
+                .setTitle(attachment.fileName)
+                .setItems(new String[]{"Open", "Save", "Share"}, (dialog, which) -> {
+                    if (which == 0) downloadForOpenOrShare(attachment, false);
+                    else if (which == 1) saveAttachment(attachment);
+                    else downloadForOpenOrShare(attachment, true);
+                })
+                .show();
+    }
+
+    private void saveAttachment(MailAttachmentRepository.IncomingAttachment attachment) {
+        pendingSaveAttachment = attachment;
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(attachment.mimeType);
+        intent.putExtra(Intent.EXTRA_TITLE, attachment.fileName);
+        try { startActivityForResult(intent, SAVE_ATTACHMENT); }
+        catch (ActivityNotFoundException error) {
+            pendingSaveAttachment = null;
+            Toast.makeText(this, "No document provider is available.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void downloadForOpenOrShare(
+            MailAttachmentRepository.IncomingAttachment attachment, boolean share) {
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try {
+                File directory = new File(getCacheDir(), "mailxperts_attachments");
+                if (!directory.exists() && !directory.mkdirs()) {
+                    throw new IllegalStateException("Could not create attachment cache.");
+                }
+                File file = new File(directory,
+                        uid + "_" + attachment.index + "_" + AttachmentStorage.safeName(attachment.fileName));
+                try (FileOutputStream output = new FileOutputStream(file)) {
+                    MailAttachmentRepository.writeAttachment(account, kind, uid,
+                            attachment.index, output);
+                }
+                Uri uri = FileProvider.getUriForFile(this,
+                        getPackageName() + ".fileprovider", file);
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Intent intent = new Intent(share ? Intent.ACTION_SEND : Intent.ACTION_VIEW);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    if (share) {
+                        intent.setType(attachment.mimeType);
+                        intent.putExtra(Intent.EXTRA_STREAM, uri);
+                        launch(Intent.createChooser(intent, "Share attachment"), "Share attachment");
+                    } else {
+                        intent.setDataAndType(uri, attachment.mimeType);
+                        launch(intent, "Open attachment");
+                    }
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Attachment failed: " + MailRepository.safe(error),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != SAVE_ATTACHMENT || resultCode != RESULT_OK || data == null
+                || data.getData() == null || pendingSaveAttachment == null) return;
+        Uri destination = data.getData();
+        MailAttachmentRepository.IncomingAttachment attachment = pendingSaveAttachment;
+        pendingSaveAttachment = null;
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try (OutputStream output = getContentResolver().openOutputStream(destination)) {
+                if (output == null) throw new IllegalStateException("Could not open selected save location.");
+                MailAttachmentRepository.writeAttachment(account, kind, uid,
+                        attachment.index, output);
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Saved " + attachment.fileName, Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Save failed: " + MailRepository.safe(error),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private boolean openExternalLink(Uri uri) {
+        if (uri == null) return true;
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        if (!ExternalLinkPolicy.isAllowedScheme(scheme)) {
+            Toast.makeText(this, "Blocked unsupported link type.", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        Intent intent;
+        if ("http".equals(scheme) || "https".equals(scheme)) {
+            intent = new Intent(Intent.ACTION_VIEW, uri);
+        } else if ("mailto".equals(scheme)) {
+            intent = new Intent(Intent.ACTION_SENDTO, uri);
+        } else if ("tel".equals(scheme) || "sms".equals(scheme) || "geo".equals(scheme)) {
+            intent = new Intent(Intent.ACTION_VIEW, uri);
+        } else {
+            // The allow-list above makes this branch unreachable; keep a safe default.
+            Toast.makeText(this, "Blocked unsupported link type.", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        launch(intent, "Open link");
+        return true;
+    }
+
+    private void printMessage() {
+        if (loaded == null) return;
+        if (printWebView != null) printWebView.destroy();
+        printWebView = new WebView(this);
+        WebSettings settings = printWebView.getSettings();
+        settings.setJavaScriptEnabled(false);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setBlockNetworkLoads(true);
+        printWebView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                PrintManager manager = (PrintManager) getSystemService(PRINT_SERVICE);
+                if (manager == null) {
+                    Toast.makeText(MessageActivity.this, "Android print service is unavailable.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                String jobName = "MailXperts - " + (loaded.subject == null ? "Message" : loaded.subject);
+                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(jobName);
+                manager.print(jobName, adapter, new PrintAttributes.Builder().build());
+            }
+        });
+        printWebView.loadDataWithBaseURL("https://mailxperts.local/", printableHtml(),
+                "text/html", "UTF-8", null);
+    }
+
+    private String printableHtml() {
+        StringBuilder attachments = new StringBuilder();
+        if (incomingAttachments != null && !incomingAttachments.isEmpty()) {
+            attachments.append("<hr><p><strong>Attachments:</strong></p><ul>");
+            for (MailAttachmentRepository.IncomingAttachment attachment : incomingAttachments) {
+                attachments.append("<li>").append(TextUtils.htmlEncode(attachment.fileName))
+                        .append(" (" ).append(TextUtils.htmlEncode(AttachmentStorage.displaySize(attachment.size)))
+                        .append(")</li>");
+            }
+            attachments.append("</ul>");
+        }
+        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
+        return "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width'>"
+                + "<style>body{background:#fff;color:#111;font-family:sans-serif;line-height:1.45;margin:24px}"
+                + "img{max-width:100%;height:auto}table{max-width:100%;border-collapse:collapse}a{color:#006b63}</style>"
+                + "</head><body><h2>" + TextUtils.htmlEncode(loaded.subject == null ? "(No subject)" : loaded.subject) + "</h2>"
+                + "<p><strong>From:</strong> " + TextUtils.htmlEncode(loaded.from == null ? "" : loaded.from) + "<br>"
+                + "<strong>To:</strong> " + TextUtils.htmlEncode(loaded.to == null ? "" : loaded.to) + "<br>"
+                + "<strong>Date:</strong> " + TextUtils.htmlEncode(date) + "</p><hr>"
+                + (loaded.html == null ? "" : loaded.html) + attachments + "</body></html>";
+    }
+
+    private void shareMessage() {
+        if (loaded == null) return;
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_SUBJECT, loaded.subject == null ? "" : loaded.subject);
+        String text = "From: " + loaded.from + "\nTo: " + loaded.to + "\n\n"
+                + Html.fromHtml(loaded.html == null ? "" : loaded.html,
+                Html.FROM_HTML_MODE_LEGACY).toString();
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        launch(Intent.createChooser(intent, "Share message"), "Share message");
+    }
+
+    private void viewHeaders() {
+        if (loaded == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Full message headers")
+                .setMessage(loaded.headers == null || loaded.headers.trim().isEmpty()
+                        ? "No headers available." : loaded.headers)
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private void confirmSpam() {
+        boolean markSpam = !MailRepository.JUNK.equals(kind);
+        new AlertDialog.Builder(this)
+                .setTitle(markSpam ? "Mark as spam?" : "Mark as not spam?")
+                .setMessage(markSpam
+                        ? "The message will move to the provider's Spam/Junk folder and receive junk flags."
+                        : "The message will move back to Inbox and receive a not-junk flag.")
+                .setPositiveButton(markSpam ? "Mark spam" : "Not spam", (dialog, which) -> setSpam(markSpam))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void setSpam(boolean markSpam) {
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try {
+                MailRepository.setSpam(account, kind, uid, markSpam);
+                removeCachedSummary();
+                runOnUiThread(() -> {
+                    Toast.makeText(this, markSpam ? "Moved to Spam/Junk" : "Moved to Inbox", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Spam action failed: " + MailRepository.safe(error), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void confirmDelete() {
+        boolean onServer = account.deleteFromServer;
+        new AlertDialog.Builder(this)
+                .setTitle(onServer ? "Move to server Trash?" : "Hide on this device?")
+                .setMessage(onServer
+                        ? "This message will be removed from this folder on the mail server and moved to its Trash folder when supported."
+                        : "This message will disappear from MailXperts on this device, but it will remain unchanged on the mail server. You can change this policy in Account Settings.")
+                .setPositiveButton("Delete", (dialog, which) -> deleteMessage(onServer))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteMessage(boolean onServer) {
+        if (!onServer) {
+            LocalStore cache = new LocalStore(this);
+            try { cache.hideCached(accountId, kind, uid); }
+            finally { cache.close(); }
+            Toast.makeText(this, "Hidden on this device — server copy retained",
+                    Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try {
+                MailRepository.deleteMessage(account, kind, uid);
+                removeCachedSummary();
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Moved to server Trash", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Delete failed: " + MailRepository.safe(error),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void markCachedSeen() {
+        LocalStore cache = new LocalStore(this);
+        try { cache.markCachedSeen(accountId, kind, uid); }
+        catch (RuntimeException ignored) {}
+        finally { cache.close(); }
+    }
+
+    private void removeCachedSummary() {
+        LocalStore cache = new LocalStore(this);
+        try { cache.deleteCached(accountId, kind, uid); }
+        catch (RuntimeException ignored) {}
+        finally { cache.close(); }
+    }
+
+    private void reportOptions() {
+        if (loaded == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle("External abuse reporting")
+                .setMessage("Full email headers can contain personal and routing information. Nothing is sent automatically. Review the generated draft, and use Cloudflare only when the sender/domain is related to Cloudflare Email Service.")
+                .setPositiveButton("Cloudflare draft", (dialog, which) -> createCloudflareDraft())
+                .setNeutralButton("Share report", (dialog, which) -> shareReport())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private String reportText() {
+        return "Possible email abuse report\n\n"
+                + "From: " + loaded.from + "\n"
+                + "Subject: " + loaded.subject + "\n"
+                + "Received: " + (loaded.date == null ? "Unknown" : DateFormat.getDateTimeInstance().format(loaded.date)) + "\n\n"
+                + "Full headers:\n" + loaded.headers;
+    }
+
+    private void createCloudflareDraft() {
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:mailabuse@cloudflare.com"));
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Possible email abuse: " + (loaded.subject == null ? "(No subject)" : loaded.subject));
+        intent.putExtra(Intent.EXTRA_TEXT, reportText());
+        launch(intent, "Create Cloudflare abuse report");
+    }
+
+    private void shareReport() {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Possible email abuse report");
+        intent.putExtra(Intent.EXTRA_TEXT, reportText());
+        launch(Intent.createChooser(intent, "Share abuse report"), "Share abuse report");
+    }
+
+    private void launch(Intent intent, String title) {
+        try { startActivity(intent); }
+        catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No compatible app is installed for: " + title, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void addReminder() {
+        if (loaded == null || intelligence == null || !intelligence.hasDueDate()) return;
+        Intent intent = new Intent(Intent.ACTION_INSERT);
+        intent.setData(CalendarContract.Events.CONTENT_URI);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, intelligence.dueAt);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, intelligence.dueAt + 30L * 60L * 1000L);
+        intent.putExtra(CalendarContract.Events.TITLE, "MailXperts reminder: "
+                + (loaded.subject == null ? "Payment due" : loaded.subject));
+        intent.putExtra(CalendarContract.Events.DESCRIPTION,
+                "Detected from email by MailXperts. Verify sender and amount before paying.\nFrom: " + loaded.from);
+        launch(intent, "Add calendar reminder");
     }
 
     private String wrap(String html) {
         return EmailHtmlPolicy.wrapForDisplay(html);
     }
 
-    private boolean openExternalLink(Uri uri) {
-        if (uri == null) return true;
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+    private String headerValue(String wanted) {
+        if (loaded == null || loaded.headers == null || wanted == null) return "";
+        String prefix = wanted.toLowerCase(Locale.ROOT) + ":";
+        String[] lines = loaded.headers.split("\\n");
+        for (String line : lines) {
+            String lower = line.toLowerCase(Locale.ROOT);
+            if (lower.startsWith(prefix)) return line.substring(line.indexOf(':') + 1).trim();
+        }
+        return "";
+    }
+
+    private String uniqueRecipients(String... rawValues) {
+        LinkedHashMap<String, String> addresses = new LinkedHashMap<>();
+        String selfEmail = account.email == null ? "" : account.email.toLowerCase(Locale.ROOT);
+        String selfUser = account.username == null ? "" : account.username.toLowerCase(Locale.ROOT);
+        for (String raw : rawValues) {
+            if (raw == null || raw.trim().isEmpty()) continue;
+            try {
+                String normalised = RecipientNormalizer.normalise(raw);
+                for (InternetAddress address : InternetAddress.parse(normalised, false)) {
+                    String email = address.getAddress() == null ? "" : address.getAddress().trim().toLowerCase(Locale.ROOT);
+                    if (email.isEmpty() || email.equals(selfEmail) || email.equals(selfUser)) continue;
+                    addresses.putIfAbsent(email, address.toUnicodeString());
+                }
+            } catch (Exception ignored) {
+                String fallback = extract(raw);
+                String key = fallback.toLowerCase(Locale.ROOT);
+                if (!fallback.isEmpty() && !key.equals(selfEmail) && !key.equals(selfUser)) {
+                    addresses.putIfAbsent(key, fallback);
+                }
+            }
+        }
+        return String.join(", ", addresses.values());
+    }
+
+    private String subtractRecipients(String candidates, String alreadyUsed) {
+        if (candidates == null || candidates.trim().isEmpty()) return "";
+        Map<String, String> used = addressMap(alreadyUsed);
+        Map<String, String> candidateMap = addressMap(candidates);
+        for (String key : used.keySet()) candidateMap.remove(key);
+        return String.join(", ", candidateMap.values());
+    }
+
+    private Map<String, String> addressMap(String raw) {
+        LinkedHashMap<String, String> out = new LinkedHashMap<>();
+        if (raw == null || raw.trim().isEmpty()) return out;
         try {
-            if ("http".equals(scheme) || "https".equals(scheme)) {
-                startActivity(new Intent(Intent.ACTION_VIEW, uri));
-            } else if ("mailto".equals(scheme)) {
-                startActivity(new Intent(Intent.ACTION_SENDTO, uri));
-            } else if ("tel".equals(scheme)) {
-                startActivity(new Intent(Intent.ACTION_DIAL, uri));
-            } else {
-                Toast.makeText(this, "Unsupported or unsafe link.", Toast.LENGTH_SHORT).show();
+            for (InternetAddress address : InternetAddress.parse(RecipientNormalizer.normalise(raw), false)) {
+                String email = address.getAddress() == null ? "" : address.getAddress().toLowerCase(Locale.ROOT);
+                if (!email.isEmpty()) out.put(email, address.toUnicodeString());
             }
-        } catch (ActivityNotFoundException error) {
-            Toast.makeText(this, "No app is available to open this link.", Toast.LENGTH_SHORT).show();
-        }
-        return true;
-    }
-
-    private void showOverflow(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        menu.getMenu().add("Reply");
-        menu.getMenu().add("Reply all");
-        menu.getMenu().add("Forward");
-        menu.getMenu().add("Print / Save as PDF");
-        menu.getMenu().add("Open in external browser");
-        menu.getMenu().add(account.deleteFromServer
-                ? "Delete — move to server Trash" : "Delete on this device");
-        menu.setOnMenuItemClickListener(item -> {
-            String action = item.getTitle().toString();
-            if (action.startsWith("Reply all")) replyAll();
-            else if (action.startsWith("Reply")) reply();
-            else if (action.startsWith("Forward")) forward();
-            else if (action.startsWith("Print")) printMessage();
-            else if (action.startsWith("Open in")) openRenderedInBrowser();
-            else if (action.startsWith("Delete")) deleteMessage();
-            return true;
-        });
-        menu.show();
-    }
-
-    private void printMessage() {
-        if (loaded == null) return;
-        String html = buildPrintableHtml();
-        printWebView = new WebView(this);
-        printWebView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                PrintManager manager = (PrintManager) getSystemService(PRINT_SERVICE);
-                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter("MailXperts-email");
-                manager.print("MailXperts email", adapter, new PrintAttributes.Builder().build());
-            }
-        });
-        printWebView.loadDataWithBaseURL("https://mailxperts.local/", html, "text/html", "UTF-8", null);
-    }
-
-    private String buildPrintableHtml() {
-        StringBuilder out = new StringBuilder();
-        out.append("<html><body style='font-family:sans-serif'>")
-                .append("<h2>").append(escape(loaded == null ? "" : loaded.subject)).append("</h2>")
-                .append("<p><b>From:</b> ").append(escape(loaded == null ? "" : loaded.from)).append("<br>")
-                .append("<b>To:</b> ").append(escape(loaded == null ? "" : loaded.to)).append("<br>");
-        if (loaded != null && loaded.date != null) {
-            out.append("<b>Date:</b> ").append(escape(DateFormat.getDateTimeInstance().format(loaded.date))).append("<br>");
-        }
-        out.append("</p>").append(loaded == null ? "" : wrap(loaded.html)).append("</body></html>");
-        return out.toString();
-    }
-
-    private void openRenderedInBrowser() {
-        if (loaded == null) return;
-        try {
-            File directory = new File(getCacheDir(), "shares");
-            if (!directory.exists()) directory.mkdirs();
-            File file = new File(directory, "mailxperts-email.html");
-            try (FileOutputStream output = new FileOutputStream(file)) {
-                output.write(buildPrintableHtml().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            }
-            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(uri, "text/html");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(Intent.createChooser(intent, "Open email with"));
-        } catch (Exception error) {
-            Toast.makeText(this, "Unable to open message externally.", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void reply() {
-        if (loaded == null) return;
-        Intent intent = baseComposeIntent("reply");
-        intent.putExtra("to", loaded.replyTo == null || loaded.replyTo.trim().isEmpty()
-                ? extractEmail(loaded.from) : extractEmail(loaded.replyTo));
-        intent.putExtra("subject", prefixSubject("Re:", loaded.subject));
-        intent.putExtra("body_html", buildQuotedReplyBody());
-        startActivity(intent);
-    }
-
-    private void replyAll() {
-        if (loaded == null) return;
-        String replyTarget = loaded.replyTo == null || loaded.replyTo.trim().isEmpty()
-                ? extractEmail(loaded.from) : extractEmail(loaded.replyTo);
-        List<String> recipients = new ArrayList<>();
-        addAddresses(recipients, replyTarget);
-        addAddresses(recipients, loaded.to);
-        addAddresses(recipients, headerValue("Cc"));
-        removeOwnAddress(recipients);
-        Intent intent = baseComposeIntent("reply_all");
-        intent.putExtra("to", TextUtils.join(", ", recipients));
-        intent.putExtra("subject", prefixSubject("Re:", loaded.subject));
-        intent.putExtra("body_html", buildQuotedReplyBody());
-        startActivity(intent);
-    }
-
-    private void forward() {
-        if (loaded == null) return;
-        Intent intent = baseComposeIntent("forward");
-        intent.putExtra("subject", prefixSubject("Fwd:", loaded.subject));
-        intent.putExtra("body_html", buildForwardBody());
-        startActivity(intent);
-    }
-
-    private Intent baseComposeIntent(String mode) {
-        Intent intent = new Intent(this, ComposeActivity.class);
-        intent.putExtra("account_id", accountId);
-        intent.putExtra("mode", mode);
-        return intent;
-    }
-
-    private String buildQuotedReplyBody() {
-        if (loaded == null) return "";
-        String dateText = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        return "<p><br></p><p>On " + escape(dateText) + ", "
-                + escape(loaded.from) + " wrote:</p><blockquote>"
-                + (loaded.html == null ? "" : loaded.html) + "</blockquote>";
-    }
-
-    private String buildForwardBody() {
-        if (loaded == null) return "";
-        String dateText = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        return "<p><br></p><hr><p><b>Forwarded message</b><br>"
-                + "From: " + escape(loaded.from) + "<br>"
-                + "To: " + escape(loaded.to) + "<br>"
-                + "Date: " + escape(dateText) + "<br>"
-                + "Subject: " + escape(loaded.subject) + "</p>"
-                + (loaded.html == null ? "" : loaded.html);
-    }
-
-    private String headerValue(String key) {
-        if (loaded == null || loaded.headers == null) return "";
-        String value = loaded.headers.get(key);
-        return value == null ? "" : value;
-    }
-
-    private void addAddresses(List<String> target, String raw) {
-        if (raw == null || raw.trim().isEmpty()) return;
-        try {
-            for (InternetAddress address : InternetAddress.parse(raw, false)) {
-                String email = address.getAddress();
-                if (email != null && !email.trim().isEmpty()) addUnique(target, email.trim());
-            }
-        } catch (Exception ignored) {
-            for (String token : raw.split("[,;]")) {
-                String email = extractEmail(token);
-                if (!email.isEmpty()) addUnique(target, email);
-            }
-        }
-    }
-
-    private void addUnique(List<String> target, String email) {
-        for (String existing : target) {
-            if (existing.equalsIgnoreCase(email)) return;
-        }
-        target.add(email);
-    }
-
-    private void removeOwnAddress(List<String> target) {
-        if (account == null || account.email == null) return;
-        target.removeIf(value -> value.equalsIgnoreCase(account.email));
-    }
-
-    private String extractEmail(String value) {
-        if (value == null) return "";
-        try {
-            InternetAddress[] parsed = InternetAddress.parse(value, false);
-            if (parsed.length > 0 && parsed[0].getAddress() != null) return parsed[0].getAddress();
         } catch (Exception ignored) {}
-        return value.replaceAll(".*<([^>]+)>.*", "$1").trim();
+        return out;
     }
 
-    private String prefixSubject(String prefix, String value) {
-        String subject = value == null ? "" : value.trim();
-        if (subject.regionMatches(true, 0, prefix, 0, prefix.length())) return subject;
-        return prefix + " " + subject;
-    }
-
-    private void markCachedSeen() {
-        try { new MailCache(this).markSeen(account.id, kind, uid, true); }
-        catch (Exception ignored) {}
-    }
-
-    private void deleteMessage() {
-        if (loaded == null) return;
-        String message = account.deleteFromServer
-                ? "Move this message to the provider Trash folder? This changes the server mailbox."
-                : "Remove the cached message from this device only? The server mailbox will not be changed.";
-        new AlertDialog.Builder(this)
-                .setTitle(account.deleteFromServer ? "Delete from server?" : "Delete on this device?")
-                .setMessage(message)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Delete", (dialog, which) -> executor.execute(() -> {
-                    try {
-                        if (account.deleteFromServer) {
-                            MailRepository.moveToTrash(account, kind, uid);
-                        }
-                        new MailCache(this).remove(account.id, kind, uid);
-                        runOnUiThread(() -> {
-                            Toast.makeText(this, account.deleteFromServer
-                                            ? "Moved to server Trash." : "Removed from this device only.",
-                                    Toast.LENGTH_SHORT).show();
-                            finish();
-                        });
-                    } catch (Exception error) {
-                        runOnUiThread(() -> Toast.makeText(this,
-                                "Delete failed: " + MailRepository.safe(error), Toast.LENGTH_LONG).show());
-                    }
-                }))
-                .show();
+    private String extract(String from) {
+        if (from == null) return "";
+        int left = from.lastIndexOf('<');
+        int right = from.lastIndexOf('>');
+        return left >= 0 && right > left ? from.substring(left + 1, right).trim() : from.trim();
     }
 
     @Override protected void onDestroy() {
-        super.onDestroy();
         executor.shutdownNow();
         if (body != null) body.destroy();
         if (printWebView != null) printWebView.destroy();
-    }
-
-    private String escape(String value) {
-        return Html.escapeHtml(value == null ? "" : value);
-    }
-
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == SAVE_ATTACHMENT && resultCode == RESULT_OK
-                && data != null && data.getData() != null && pendingSaveAttachment != null) {
-            MailAttachmentRepository.IncomingAttachment attachment = pendingSaveAttachment;
-            pendingSaveAttachment = null;
-            Uri target = data.getData();
-            executor.execute(() -> {
-                try {
-                    try (OutputStream output = getContentResolver().openOutputStream(target)) {
-                        if (output == null) throw new IllegalStateException("Cannot open selected destination");
-                        MailAttachmentRepository.copyAttachmentTo(account, kind, uid, attachment.partPath, output);
-                    }
-                    runOnUiThread(() -> Toast.makeText(this, "Attachment saved.", Toast.LENGTH_SHORT).show());
-                } catch (Exception error) {
-                    runOnUiThread(() -> Toast.makeText(this,
-                            "Save failed: " + MailRepository.safe(error), Toast.LENGTH_LONG).show());
-                }
-            });
-        }
+        super.onDestroy();
     }
 }
