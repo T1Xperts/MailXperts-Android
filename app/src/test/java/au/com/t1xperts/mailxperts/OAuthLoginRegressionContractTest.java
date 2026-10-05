@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** Guards the v1.6.0-beta.5 OAuth login regression found during device QA. */
+/** Guards the OAuth login regression family found during physical-device QA. */
 public class OAuthLoginRegressionContractTest {
     @Test public void connectionValidationPrecedesAccountPersistence() throws Exception {
         String source = read("src/main/java/au/com/t1xperts/mailxperts/OAuthConnectActivity.java",
@@ -32,13 +32,16 @@ public class OAuthLoginRegressionContractTest {
                 source.contains("status.setText(ProviderErrorMessage.forProvider"));
     }
 
-    @Test public void googleAuthorizationRequestsMailboxAndEmailIdentityScopes() throws Exception {
+    @Test public void googleAuthorizationRequestsAndVerifiesOnlyGmailMailboxScope() throws Exception {
         String source = read("src/main/java/au/com/t1xperts/mailxperts/GoogleOAuthManager.java",
                 "app/src/main/java/au/com/t1xperts/mailxperts/GoogleOAuthManager.java");
         assertTrue(source.contains("https://mail.google.com/"));
-        assertTrue(source.contains("https://www.googleapis.com/auth/userinfo.email"));
-        assertTrue(source.contains("new Scope(MAIL_SCOPE)"));
-        assertTrue(source.contains("new Scope(EMAIL_SCOPE)"));
+        assertTrue(source.contains("Collections.singletonList(new Scope(MAIL_SCOPE))"));
+        assertTrue(source.contains("getGrantedScopes()"));
+        assertTrue(source.contains("containsMailScope"));
+        assertTrue(source.contains("setOptOutIncludingGrantedScopes(true)"));
+        assertFalse(source.contains("https://www.googleapis.com/auth/userinfo.email"));
+        assertFalse(source.contains("EMAIL_SCOPE"));
     }
 
     @Test public void googleAccountMismatchIsBlocked() throws Exception {
