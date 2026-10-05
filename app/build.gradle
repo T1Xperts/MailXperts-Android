@@ -29,8 +29,8 @@ android {
         applicationId 'au.com.t1xperts.mailxperts'
         minSdk 26
         targetSdk 36
-        versionCode 19
-        versionName '1.6.0-beta.5'
+        versionCode 20
+        versionName '1.6.0-beta.6'
 
         buildConfigField 'String', 'MX_MICROSOFT_CLIENT_ID', javaString(microsoftClientId)
         buildConfigField 'String', 'MX_MICROSOFT_REDIRECT_URI', javaString(microsoftRedirectUri)
