@@ -1,0 +1,47 @@
+name: Repair MessageActivity once
+
+on:
+  push:
+    branches: [ feature/complete-p1-p2-backlog-batch ]
+    paths:
+      - '.github/workflows/repair-message-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/complete-p1-p2-backlog-batch
+          fetch-depth: 0
+      - name: Restore exact last-good MessageActivity and add selectable metadata only
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='app/src/main/java/au/com/t1xperts/mailxperts/MessageActivity.java'
+          git show 84035580f58dd3e9bc6e386c2ae0038bc2c9cbac:"$file" > "$file"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/au/com/t1xperts/mailxperts/MessageActivity.java')
+          s = p.read_text(encoding='utf-8')
+          old = '        header = Ui.text(this, "Loading…");\n        root.addView(header);'
+          new = ('        header = Ui.text(this, "Loading…");\n'
+                 '        header.setTextIsSelectable(true);\n'
+                 '        header.setContentDescription("Message sender and recipient details. Long press to select and copy.");\n'
+                 '        root.addView(header);')
+          if old not in s:
+              raise SystemExit('Expected MessageActivity header block not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Commit repair
+        run: |
+          set -euo pipefail
+          git config user.name 'T1Xperts'
+          git config user.email 'rafi.m@t1xperts.com.au'
+          git add app/src/main/java/au/com/t1xperts/mailxperts/MessageActivity.java
+          git commit -m 'fix: restore MessageActivity and keep selectable metadata'
+          git push origin HEAD:feature/complete-p1-p2-backlog-batch
