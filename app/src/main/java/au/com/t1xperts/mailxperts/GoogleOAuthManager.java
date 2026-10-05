@@ -13,13 +13,13 @@ import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Tasks;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** Google Identity Services authorization for Gmail IMAP/SMTP XOAUTH2. */
 final class GoogleOAuthManager {
     static final String MAIL_SCOPE = "https://mail.google.com/";
-    static final String EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
     private static final long ACCESS_TOKEN_CACHE_MS = 50L * 60L * 1000L;
 
     interface Callback {
@@ -74,6 +74,10 @@ final class GoogleOAuthManager {
         if (result.hasResolution()) {
             throw new IllegalStateException("CONSENT_REQUIRED: Reconnect this Gmail account with Google.");
         }
+        if (!hasMailScope(result)) {
+            throw new IllegalStateException(
+                    "CONSENT_REQUIRED: Google has not granted Gmail mailbox access. Reconnect with Continue with Google and approve Gmail access.");
+        }
         String token = result.getAccessToken();
         if (token == null || token.trim().isEmpty()) {
             throw new IllegalStateException("AUTH_REJECTED: Google did not return an OAuth access token.");
@@ -82,17 +86,21 @@ final class GoogleOAuthManager {
     }
 
     private static AuthorizationRequest request() {
-        // Request the mailbox scope plus the minimum identity scope needed to bind the returned
-        // token to the Gmail address being configured. This prevents a token for one Google
-        // account from being silently tested against a stale username from another account.
+        // Gmail IMAP/SMTP requires the full Gmail mail scope. Request only that protocol scope and
+        // opt out of rolling unrelated grants into this token so granular consent cannot yield a
+        // token that looks successful but is unusable for SASL XOAUTH2 mailbox authentication.
         return AuthorizationRequest.builder()
-                .setRequestedScopes(Arrays.asList(
-                        new Scope(MAIL_SCOPE),
-                        new Scope(EMAIL_SCOPE)))
+                .setRequestedScopes(Collections.singletonList(new Scope(MAIL_SCOPE)))
+                .setOptOutIncludingGrantedScopes(true)
                 .build();
     }
 
     private static void deliver(AuthorizationResult result, Callback callback) {
+        if (!hasMailScope(result)) {
+            callback.onError("Google sign-in completed, but Gmail mailbox permission was not granted. "
+                    + "Use Continue with Google again and approve Gmail access.");
+            return;
+        }
         String token = result == null ? null : result.getAccessToken();
         if (token == null || token.trim().isEmpty()) {
             callback.onError("Google did not return an OAuth access token.");
@@ -106,6 +114,16 @@ final class GoogleOAuthManager {
             }
         } catch (Exception ignored) {}
         callback.onAuthorized(email, token, System.currentTimeMillis() + ACCESS_TOKEN_CACHE_MS);
+    }
+
+    private static boolean hasMailScope(AuthorizationResult result) {
+        if (result == null) return false;
+        List<String> granted = result.getGrantedScopes();
+        if (granted == null) return false;
+        for (String scope : granted) {
+            if (MAIL_SCOPE.equals(scope)) return true;
+        }
+        return false;
     }
 
     private static String safe(Throwable error) {
