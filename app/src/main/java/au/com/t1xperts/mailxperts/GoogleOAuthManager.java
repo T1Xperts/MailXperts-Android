@@ -117,8 +117,10 @@ final class GoogleOAuthManager {
     }
 
     private static boolean hasMailScope(AuthorizationResult result) {
-        if (result == null) return false;
-        List<String> granted = result.getGrantedScopes();
+        return result != null && containsMailScope(result.getGrantedScopes());
+    }
+
+    static boolean containsMailScope(List<String> granted) {
         if (granted == null) return false;
         for (String scope : granted) {
             if (MAIL_SCOPE.equals(scope)) return true;
