@@ -39,7 +39,7 @@ public class BacklogCompletionContractTest {
 
         // 013 full-height structured drawer
         assertTrue(navigation.contains("Gravity.START"));
-        assertTrue(navigation.contains("WindowManager.LayoutParams.MATCH_PARENT"));
+        assertTrue(navigation.contains("ViewGroup.LayoutParams.MATCH_PARENT"));
         assertTrue(navigation.contains("PEOPLE"));
         assertTrue(navigation.contains("ACCOUNTS & APP"));
 
