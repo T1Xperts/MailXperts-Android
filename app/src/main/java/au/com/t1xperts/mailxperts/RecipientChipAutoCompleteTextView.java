@@ -1,5 +1,6 @@
 package au.com.t1xperts.mailxperts;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.Editable;
 import android.text.Spannable;
@@ -10,6 +11,7 @@ import android.text.TextWatcher;
 import android.widget.MultiAutoCompleteTextView;
 
 /** Multi-recipient input that turns completed comma/semicolon/newline tokens into visual chips. */
+@SuppressLint("AppCompatCustomView")
 final class RecipientChipAutoCompleteTextView extends MultiAutoCompleteTextView {
     private boolean styling;
 
