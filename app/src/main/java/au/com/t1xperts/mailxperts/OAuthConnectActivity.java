@@ -69,7 +69,7 @@ public final class OAuthConnectActivity extends Activity {
                         String email, String accessToken, long expiresAtMillis) {
                     handleGoogleAuthorized(email, accessToken, expiresAtMillis);
                 }
-                @Override public void onError(String message) { showError(message); }
+                @Override public void onError(String message) { showProviderError(message); }
             });
             return;
         }
@@ -79,37 +79,87 @@ public final class OAuthConnectActivity extends Activity {
                         @Override public void onAuthorized(OAuthCredential credential) {
                             persistAndValidate(credential, "");
                         }
-                        @Override public void onError(String message) { showError(message); }
+                        @Override public void onError(String message) { showProviderError(message); }
                     });
             return;
         }
-        showError("This provider does not use OAuth in MailXperts.");
+        showFriendlyError("This provider does not use OAuth in MailXperts.");
     }
 
     private void handleGoogleAuthorized(String email, String accessToken, long expiresAtMillis) {
         persistAndValidate(new OAuthCredential(accessToken, "", expiresAtMillis), email);
     }
 
+    /**
+     * Validates the candidate OAuth account before committing account metadata. The token must be
+     * temporarily available to MailAuth during IMAP/SMTP validation, but any previous token is
+     * restored if validation fails so the account cannot be left half-migrated.
+     */
     private void persistAndValidate(OAuthCredential credential, String authorizedEmail) {
-        if (authorizedEmail != null && !authorizedEmail.trim().isEmpty()) {
-            account.email = authorizedEmail.trim();
-            account.username = authorizedEmail.trim();
-        } else if (account.username == null || account.username.trim().isEmpty()) {
-            account.username = account.email == null ? "" : account.email.trim();
+        final AccountConfig candidate = copyAccount(account);
+        final String authorized = trim(authorizedEmail);
+        final String configuredEmail = trim(candidate.email);
+
+        if (ProviderPreset.GMAIL.equals(candidate.provider)) {
+            if (!authorized.isEmpty()) {
+                if (!configuredEmail.isEmpty()
+                        && !configuredEmail.equalsIgnoreCase(authorized)) {
+                    showFriendlyError("Google account mismatch. You authorized " + authorized
+                            + ", but this MailXperts account is configured as " + configuredEmail
+                            + ". Choose the same Google account or add it as a separate mailbox.");
+                    return;
+                }
+                candidate.email = authorized;
+                candidate.username = authorized;
+            } else if (configuredEmail.isEmpty()) {
+                showFriendlyError("Google sign-in completed, but MailXperts could not confirm the "
+                        + "authorized Gmail address. Return to account settings, enter the Gmail "
+                        + "address, then use Continue with Google again.");
+                return;
+            } else {
+                // Google Identity can occasionally omit the account email from an authorization
+                // result. In that case validate the token against the explicitly configured Gmail
+                // identity rather than silently switching to another account.
+                candidate.email = configuredEmail;
+                candidate.username = configuredEmail;
+            }
+        } else {
+            if (!authorized.isEmpty()) {
+                candidate.email = authorized;
+                candidate.username = authorized;
+            } else if (candidate.username == null || candidate.username.trim().isEmpty()) {
+                candidate.username = candidate.email == null ? "" : candidate.email.trim();
+            }
         }
-        account.authType = AuthType.OAUTH2;
-        account.password = "";
+
+        candidate.authType = AuthType.OAUTH2;
+        candidate.password = "";
+
+        final CredentialVault vault = new CredentialVault(getApplicationContext());
+        final OAuthCredential previousCredential = vault.load(candidate.id);
 
         executor.execute(() -> {
             try {
-                new CredentialVault(getApplicationContext()).save(account.id, credential);
-                store.save(account);
-                MailRepository.testConnections(account);
-                boolean backgroundReady = NotificationScheduler.update(
-                        getApplicationContext(), account);
+                // MailRepository.testConnections() obtains OAuth credentials through MailAuth,
+                // therefore stage the new token in the vault before testing. Account metadata is
+                // deliberately not saved until both IMAP and SMTP validation succeed.
+                vault.save(candidate.id, credential);
+                MailRepository.testConnections(candidate);
+                store.save(candidate);
+                account = candidate;
+
+                boolean backgroundReady;
+                try {
+                    backgroundReady = NotificationScheduler.update(
+                            getApplicationContext(), candidate);
+                } catch (Exception schedulingError) {
+                    backgroundReady = false;
+                }
+
+                final boolean finalBackgroundReady = backgroundReady;
                 runOnUiThread(() -> {
                     status.setTextColor(Ui.teal(this));
-                    status.setText(backgroundReady
+                    status.setText(finalBackgroundReady
                             ? "Connected. IMAP and SMTP OAuth authentication succeeded."
                             : "Connected. Manual mail access works; background scheduling needs attention.");
                     Intent result = new Intent();
@@ -118,15 +168,31 @@ public final class OAuthConnectActivity extends Activity {
                     finish();
                 });
             } catch (Exception error) {
-                showError(ProviderErrorMessage.forAccount(account, error));
+                restoreCredential(vault, candidate.id, previousCredential);
+                showConnectionError(candidate, error);
             }
         });
+    }
+
+    private void restoreCredential(
+            CredentialVault vault, String accountId, OAuthCredential previousCredential) {
+        try {
+            if (previousCredential != null
+                    && (previousCredential.hasAccessToken() || previousCredential.hasRefreshToken())) {
+                vault.save(accountId, previousCredential);
+            } else {
+                vault.clear(accountId);
+            }
+        } catch (Exception ignored) {
+            // The primary failure remains the connection error. Do not replace it with a rollback
+            // storage exception, but do leave account metadata untouched because it was not saved.
+        }
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null) {
-            showError("Authorization was cancelled or did not complete.");
+            showFriendlyError("Authorization was cancelled or did not complete.");
             return;
         }
         if (requestCode == GOOGLE_AUTHORIZE) {
@@ -135,25 +201,67 @@ public final class OAuthConnectActivity extends Activity {
                         String email, String accessToken, long expiresAtMillis) {
                     handleGoogleAuthorized(email, accessToken, expiresAtMillis);
                 }
-                @Override public void onError(String message) { showError(message); }
+                @Override public void onError(String message) { showProviderError(message); }
             });
         } else if (requestCode == MICROSOFT_AUTHORIZE) {
             MicrosoftOAuthManager.finish(this, data, new MicrosoftOAuthManager.Callback() {
                 @Override public void onAuthorized(OAuthCredential credential) {
                     persistAndValidate(credential, "");
                 }
-                @Override public void onError(String message) { showError(message); }
+                @Override public void onError(String message) { showProviderError(message); }
             });
         }
     }
 
-    private void showError(String message) {
+    /** Maps a raw provider/SDK message exactly once. */
+    private void showProviderError(String rawMessage) {
+        showFriendlyError(ProviderErrorMessage.forProvider(
+                account == null ? "" : account.provider, rawMessage));
+    }
+
+    /** Maps a mail-transport exception exactly once. */
+    private void showConnectionError(AccountConfig attemptedAccount, Throwable error) {
+        showFriendlyError(ProviderErrorMessage.forAccount(attemptedAccount, error));
+    }
+
+    /** Displays an already safe user-facing message without remapping it. */
+    private void showFriendlyError(String message) {
         runOnUiThread(() -> {
             Ui.setEnabled(connect, true, connectLabel(), "");
             status.setTextColor(Ui.error(this));
-            status.setText(ProviderErrorMessage.forProvider(
-                    account == null ? "" : account.provider, message));
+            status.setText(message == null || message.trim().isEmpty()
+                    ? "Authentication failed. Please try again."
+                    : message.trim());
         });
+    }
+
+    private static AccountConfig copyAccount(AccountConfig source) {
+        AccountConfig copy = new AccountConfig();
+        copy.id = source.id;
+        copy.provider = source.provider;
+        copy.authType = source.authType;
+        copy.label = source.label;
+        copy.email = source.email;
+        copy.username = source.username;
+        copy.imapHost = source.imapHost;
+        copy.imapPort = source.imapPort;
+        copy.smtpHost = source.smtpHost;
+        copy.smtpPort = source.smtpPort;
+        copy.smtpSecurity = source.smtpSecurity;
+        copy.password = source.password;
+        copy.syncEnabled = source.syncEnabled;
+        copy.syncIntervalMinutes = source.syncIntervalMinutes;
+        copy.notificationsEnabled = source.notificationsEnabled;
+        copy.deleteFromServer = source.deleteFromServer;
+        copy.syncReadState = source.syncReadState;
+        copy.syncDraftsToServer = source.syncDraftsToServer;
+        copy.signatureEnabled = source.signatureEnabled;
+        copy.signatureHtml = source.signatureHtml;
+        return copy;
+    }
+
+    private static String trim(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private String providerTitle() {
