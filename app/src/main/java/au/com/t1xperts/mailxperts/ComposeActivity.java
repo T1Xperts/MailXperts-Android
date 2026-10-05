@@ -118,8 +118,11 @@ public class ComposeActivity extends ComponentActivity {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        settings.setBlockNetworkLoads(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        // Remote images are required for HTML signatures and quoted email content.
+        // Navigation, file/content access and persistent web storage remain blocked.
+        settings.setBlockNetworkLoads(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setSafeBrowsingEnabled(true);
         fontBridge = new EditorSupport.FontBridge();
         imageBridge = new EditorSupport.ImageBridge(this, PICK_COMPOSE_IMAGE);
         editor.addJavascriptInterface(fontBridge, "MailXpertsFonts");
@@ -292,12 +295,11 @@ public class ComposeActivity extends ComponentActivity {
 
     private boolean normaliseRecipientFields() {
         try {
-            String normalTo = RecipientNormalizer.normalise(to.getText().toString());
-            String normalCc = RecipientNormalizer.normalise(cc.getText().toString());
-            String normalBcc = RecipientNormalizer.normalise(bcc.getText().toString());
-            to.setText(normalTo);
-            cc.setText(normalCc);
-            bcc.setText(normalBcc);
+            RecipientSet.Fields recipients = RecipientSet.normalise(
+                    to.getText().toString(), cc.getText().toString(), bcc.getText().toString());
+            to.setText(recipients.to);
+            cc.setText(recipients.cc);
+            bcc.setText(recipients.bcc);
             return true;
         } catch (IllegalArgumentException error) {
             to.setError("Check recipient addresses");

@@ -70,7 +70,8 @@ final class RecipientSuggestionAdapter extends BaseAdapter implements Filterable
             }
 
             @Override public CharSequence convertResultToString(Object resultValue) {
-                return resultValue == null ? "" : resultValue.toString();
+                String value = resultValue == null ? "" : resultValue.toString();
+                return RecipientChipStyler.style(context, value);
             }
         };
     }

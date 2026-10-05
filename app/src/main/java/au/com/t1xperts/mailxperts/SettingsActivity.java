@@ -539,7 +539,7 @@ public class SettingsActivity extends Activity {
         runOnUiThread(() -> {
             Ui.setEnabled(save, true, "Test IMAP + SMTP and Save", "");
             status.setTextColor(Ui.error(this));
-            status.setText(prefix + MailRepository.safe(error));
+            status.setText(prefix + ProviderErrorMessage.forAccount(current, error));
         });
     }
 
