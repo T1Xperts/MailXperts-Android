@@ -1,0 +1,30 @@
+name: Apply consolidated backlog batch
+
+on:
+  push:
+    branches: [ feature/complete-p1-p2-backlog-batch ]
+    paths:
+      - '.github/workflows/backlog-batch-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/complete-p1-p2-backlog-batch
+          fetch-depth: 0
+      - name: Apply source patch
+        run: python3 tools/apply_backlog_batch.py
+      - name: Commit implementation
+        run: |
+          set -euo pipefail
+          git config user.name 'T1Xperts'
+          git config user.email 'rafi.m@t1xperts.com.au'
+          git add app RELEASE-NOTES-v1.6.0-beta.5.md
+          git commit -m 'feat: complete consolidated P1/P2 backlog batch'
+          git push origin HEAD:feature/complete-p1-p2-backlog-batch
