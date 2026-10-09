@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 
 const MAX_READ_CHARS = 200000;
@@ -22,10 +22,15 @@ export function createReadOnlyHandlers({
 
 async function readBounded(root, requestedPath) {
   if (!root) throw coded("Read root is not configured", "NOT_CONFIGURED");
-  const base = resolve(root);
-  const target = resolve(base, String(requestedPath || ""));
-  if (target !== base && !target.startsWith(base + sep)) {
+  const lexicalBase = resolve(root);
+  const lexicalTarget = resolve(lexicalBase, String(requestedPath || ""));
+  if (lexicalTarget !== lexicalBase && !lexicalTarget.startsWith(lexicalBase + sep)) {
     throw coded("Path escapes configured read root", "PATH_TRAVERSAL");
+  }
+  const base = await realpath(lexicalBase);
+  const target = await realpath(lexicalTarget);
+  if (target !== base && !target.startsWith(base + sep)) {
+    throw coded("Resolved path escapes configured read root", "PATH_TRAVERSAL");
   }
   const text = await readFile(target, "utf8");
   if (text.length > MAX_READ_CHARS) throw coded("File exceeds policy limit", "OUTPUT_TOO_LARGE");
