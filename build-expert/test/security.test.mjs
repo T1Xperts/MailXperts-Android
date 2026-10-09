@@ -10,17 +10,20 @@ import { ToolGateway } from "../src/tool-gateway.mjs";
 import { BuildExpertOrchestrator } from "../src/orchestrator.mjs";
 import { OpenAIProvider } from "../src/providers/openai.mjs";
 
-test("secret redaction removes bearer, named secrets, API keys and private keys", () => {
+test("secret redaction removes bearer, named secrets, JSON secrets, API keys and private keys", () => {
   const source = [
     "Authorization: Bearer super-secret-token",
     "password=NeverLogMe",
+    '{"password":"json-secret","access_token":"json-token"}',
     "sk-abcdefghijklmnopqrstuvwxyz123456",
     "-----BEGIN PRIVATE KEY-----\nabc123\n-----END PRIVATE KEY-----"
   ].join("\n");
   const result = redact(source);
-  assert.ok(result.redactions >= 4);
+  assert.ok(result.redactions >= 6);
   assert.ok(!result.text.includes("super-secret-token"));
   assert.ok(!result.text.includes("NeverLogMe"));
+  assert.ok(!result.text.includes("json-secret"));
+  assert.ok(!result.text.includes("json-token"));
   assert.ok(!result.text.includes("abcdefghijklmnopqrstuvwxyz123456"));
   assert.ok(!result.text.includes("abc123"));
 });
@@ -60,17 +63,19 @@ test("orchestrator redacts before provider call and writes hash-only audit evide
       id: "qa-1",
       type: "review",
       prompt: "Review password=top-secret",
-      context: "Authorization: Bearer token-123",
+      context: 'Authorization: Bearer token-123\n{"access_token":"json-provider-token"}',
       repository: "T1Xperts/MailXperts-Android",
       ref: "feature/test"
     });
     assert.ok(!received.includes("top-secret"));
     assert.ok(!received.includes("token-123"));
+    assert.ok(!received.includes("json-provider-token"));
     assert.equal(result.text, "safe result");
     const audit = await readFile(auditFile, "utf8");
     assert.ok(audit.includes("inputHash"));
     assert.ok(!audit.includes("top-secret"));
     assert.ok(!audit.includes("token-123"));
+    assert.ok(!audit.includes("json-provider-token"));
   } finally {
     if (previous === undefined) delete process.env.BUILD_EXPERT_AUDIT_FILE;
     else process.env.BUILD_EXPERT_AUDIT_FILE = previous;
