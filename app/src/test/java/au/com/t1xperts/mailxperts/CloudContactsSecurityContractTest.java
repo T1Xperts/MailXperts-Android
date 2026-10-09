@@ -21,12 +21,25 @@ public class CloudContactsSecurityContractTest {
         assertFalse(manager.contains("for (RecipientDirectory.Entry local : history.entries()) {\n            CloudContactRecord result"));
     }
 
-    @Test public void cardDavSecretsUseAndroidKeystoreAndHttps() throws Exception {
+    @Test public void remoteDeletionsAreReconciledByProviderIdentity() throws Exception {
+        String manager = src("CloudContactSyncManager.java");
+        String store = src("CloudContactStore.java");
+        String google = src("GooglePeopleContactsClient.java");
+        assertTrue(manager.contains("removeMappingByRemoteId(provider, record.remoteId)"));
+        assertTrue(store.contains("removeMappingByRemoteId(String provider, String remoteId)"));
+        assertTrue(google.contains("if (deleted && (emails == null || emails.length() == 0))"));
+    }
+
+    @Test public void cardDavSecretsUseAndroidKeystoreAndAllUrlsRequireHttps() throws Exception {
         String vault = src("ContactSecretVault.java");
+        String cardDav = src("CardDavContactsClient.java");
         assertTrue(vault.contains("AndroidKeyStore"));
         assertTrue(vault.contains("AES/GCM/NoPadding"));
         assertTrue(vault.contains("https://contacts.icloud.com/"));
         assertTrue(vault.contains("CardDAV endpoint must use HTTPS"));
+        assertTrue(cardDav.contains("CardDAV URL must use HTTPS"));
+        assertTrue(cardDav.contains("return requireHttps(resolved.toString())"));
+        assertTrue(cardDav.contains("factory.setExpandEntityReferences(false)"));
     }
 
     @Test public void cloudActivityIsNotExported() throws Exception {
