@@ -2,7 +2,7 @@
 
 ## Scope
 
-This branch implements the remaining direct cloud-contact foundation for **MX-QA-027** and the first production-safe Build Expert foundation for **MX-QA-029**. Production release/signing is intentionally outside this branch's autonomous capabilities.
+This branch implements the remaining direct cloud-contact foundation for **MX-QA-027** and a production-safe Build Expert foundation for **MX-QA-029**. Android candidate identity is **v1.6.0-beta.8 / versionCode 22**. Production release/signing remains outside autonomous AI capabilities.
 
 ## MX-QA-027 — Smart Contacts direct provider integration
 
@@ -56,17 +56,19 @@ Implemented production-safe foundation:
   - auto-allowed read-only tools;
   - human-approval-required low-risk write tools;
   - hard-forbidden merge, production deploy/release, signing-key and secret operations.
-- In-process tool gateway enforcing the policy and payload limits.
-- Automated tests for redaction, context limits, tool denial, audit privacy and Responses API request shape.
+- Tool gateway enforcing policy and payload limits.
+- Signed HMAC service API with timestamp checks and nonce replay protection for `/v1/tasks` and `/v1/tools/call`.
+- Read-only repository/log/build-status handlers with configured roots, size caps and path-traversal protection.
+- Automated tests for redaction, context limits, tool denial, audit privacy, Responses API request shape, request signing/replay and path traversal.
 - Dedicated GitHub Actions security workflow.
 
-Deliberately not yet considered complete MX-QA-029 scope:
+Still deliberately staged within MX-QA-029:
 
-- authenticated remote MCP/signed-service transport;
+- standards-compliant remote MCP transport if required in addition to the signed service API;
 - ephemeral isolated coding runner;
-- implemented draft branch/patch/PR write handlers;
+- implemented human-approved draft branch/patch/PR write handlers;
 - provider failover/circuit breaker beyond bounded timeout;
-- full operational cost accounting/alerts;
+- full operational cost accounting and spend alerts;
 - controlled release-preparation orchestration;
 - security review and operational UAT.
 
@@ -74,4 +76,4 @@ Those later phases must preserve the existing rule that production merge, releas
 
 ## Change control
 
-The combined PR remains **draft** until Android CI, P0 regression and Build Expert security CI pass. Because MX-QA-029 is P1 and introduces an external AI integration surface, it must receive human review before merge to `main`.
+The combined PR remains **draft** until beta.8 Android CI, P0 regression and Build Expert security CI pass. Because MX-QA-029 is P1 and introduces an external AI integration surface, it must receive human review before merge to `main`.
