@@ -4,7 +4,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,7 +114,7 @@ final class GooglePeopleContactsClient {
         payload.put("emailAddresses", emails);
         String display = name == null ? "" : name.trim();
         if (!display.isEmpty()) {
-            payload.put("names", new JSONArray().put(new JSONObject().put("displayName", display)));
+            payload.put("names", new JSONArray().put(new JSONObject().put("unstructuredName", display)));
         }
         return payload;
     }
@@ -166,6 +165,10 @@ final class GooglePeopleContactsClient {
     }
 
     private static String enc(String value) {
-        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+        try {
+            return URLEncoder.encode(value == null ? "" : value, "UTF-8");
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 }
