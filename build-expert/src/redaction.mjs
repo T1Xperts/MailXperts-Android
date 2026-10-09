@@ -1,24 +1,27 @@
-const RULES = [
-  [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "[REDACTED_PRIVATE_KEY]"],
-  [/\b(authorization\s*:\s*bearer\s+)[^\s"']+/gi, "$1[REDACTED]"],
-  [/\b(api[-_ ]?key|access[-_ ]?token|refresh[-_ ]?token|password|secret)\b\s*[:=]\s*["']?[^\s,"'}]+/gi, "$1=[REDACTED]"],
-  [/\bsk-[A-Za-z0-9_-]{12,}\b/g, "[REDACTED_API_KEY]"]
-];
+const PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g;
+const AUTH_BEARER = /\b(authorization\s*:\s*bearer\s+)[^\s"']+/gi;
+const NAMED_SECRET = /\b(api[-_ ]?key|access[-_ ]?token|refresh[-_ ]?token|password|secret)\b\s*[:=]\s*["']?[^\s,"'}]+/gi;
+const OPENAI_STYLE_KEY = /\bsk-[A-Za-z0-9_-]{12,}\b/g;
 
 export function redact(value) {
   let text = typeof value === "string" ? value : JSON.stringify(value ?? "");
   let redactions = 0;
-  for (const [pattern, replacement] of RULES) {
-    text = text.replace(pattern, match => {
-      redactions += 1;
-      if (typeof replacement === "function") return replacement(match);
-      if (replacement.includes("$1")) {
-        const prefix = match.match(pattern)?.[1] ?? "";
-        return replacement.replace("$1", prefix);
-      }
-      return replacement;
-    });
-  }
+  text = text.replace(PRIVATE_KEY, () => {
+    redactions += 1;
+    return "[REDACTED_PRIVATE_KEY]";
+  });
+  text = text.replace(AUTH_BEARER, (_match, prefix) => {
+    redactions += 1;
+    return `${prefix}[REDACTED]`;
+  });
+  text = text.replace(NAMED_SECRET, (_match, name) => {
+    redactions += 1;
+    return `${name}=[REDACTED]`;
+  });
+  text = text.replace(OPENAI_STYLE_KEY, () => {
+    redactions += 1;
+    return "[REDACTED_API_KEY]";
+  });
   return { text, redactions };
 }
 
