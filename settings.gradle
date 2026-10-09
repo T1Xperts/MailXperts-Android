@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MailXperts"
 include(":app")
+include(":smsapp")
