@@ -131,6 +131,11 @@ final class GooglePeopleContactsClient {
             name = names.optJSONObject(0).optString("displayName", "");
         }
         JSONArray emails = person.optJSONArray("emailAddresses");
+        if (deleted && (emails == null || emails.length() == 0)) {
+            out.add(new CloudContactRecord(CloudContactStore.GOOGLE, remoteId, etag,
+                    name, "", true));
+            return;
+        }
         if (emails == null || emails.length() == 0) return;
         for (int i = 0; i < emails.length(); i++) {
             JSONObject emailItem = emails.optJSONObject(i);
