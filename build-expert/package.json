@@ -6,6 +6,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "start": "node src/cli.mjs"
+    "start": "node src/cli.mjs",
+    "serve": "node src/server.mjs"
   }
 }
