@@ -24,11 +24,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/** Local-first Smart Contacts browser and device-contact bridge for MX-QA-027. */
+/** Local-first Smart Contacts browser and provider bridge for MX-QA-027. */
 public class SmartContactsActivity extends Activity {
     private static final int REQUEST_CONTACTS = 6201;
 
     private RecipientHistory history;
+    private CloudContactStore cloudStore;
     private LinearLayout contactsContainer;
     private TextView status;
     private EditText search;
@@ -38,6 +39,7 @@ public class SmartContactsActivity extends Activity {
         ThemeManager.apply(this);
         super.onCreate(state);
         history = new RecipientHistory(this);
+        cloudStore = new CloudContactStore(this);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -58,8 +60,8 @@ public class SmartContactsActivity extends Activity {
 
         TextView description = Ui.text(this,
                 "MailXperts learns legitimate people from sent and received mail locally. "
-                        + "With permission, it also reads Android Contacts, including Google, "
-                        + "Exchange or CardDAV/iCloud contacts already synchronised to this phone.");
+                        + "With permission, it can read Android Contacts. Optional Google Contacts "
+                        + "and iCloud/CardDAV cloud sync is separately controlled and never uploads learned contacts automatically.");
         description.setTextColor(Ui.muted(this));
         root.addView(description);
 
@@ -88,6 +90,10 @@ public class SmartContactsActivity extends Activity {
         actions.addView(Ui.secondaryButton(this,
                 "Import phone contacts into local Smart Contacts",
                 v -> importDeviceContacts()));
+
+        actions.addView(Ui.secondaryButton(this,
+                "Google / iCloud cloud contacts",
+                v -> startActivity(new Intent(this, CloudContactsActivity.class))));
 
         actions.addView(Ui.secondaryButton(this,
                 "Clear learned MailXperts contacts",
@@ -181,13 +187,17 @@ public class SmartContactsActivity extends Activity {
                         .comparingInt((RecipientDirectory.Entry e) -> e.count).reversed())
                 .thenComparing(e -> e.label().toLowerCase(Locale.ROOT)));
 
+        int googleSelected = cloudStore.promoted(CloudContactStore.GOOGLE).size();
+        int iCloudSelected = cloudStore.promoted(CloudContactStore.ICLOUD).size();
         status.setText(localEntries.size() + " learned • "
                 + deviceEntries.size() + " phone-contact email addresses • "
-                + merged.size() + " shown");
+                + merged.size() + " shown • "
+                + googleSelected + " Google-selected • "
+                + iCloudSelected + " iCloud-selected");
 
         if (merged.isEmpty()) {
             TextView empty = Ui.text(this,
-                    "No contacts match yet. Send or receive email, or enable phone contacts.");
+                    "No contacts match yet. Send or receive email, or enable a contact source.");
             empty.setTextColor(Ui.muted(this));
             contactsContainer.addView(empty);
             return;
@@ -230,19 +240,35 @@ public class SmartContactsActivity extends Activity {
                     .append(DateFormat.getDateTimeInstance(
                             DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.lastUsed)));
         }
+        String key = CloudContactStore.normalizeEmail(entry.email);
+        if (cloudStore.promoted(CloudContactStore.GOOGLE).contains(key)) out.append(" • Google selected");
+        if (cloudStore.promoted(CloudContactStore.ICLOUD).contains(key)) out.append(" • iCloud selected");
         return out.toString();
     }
 
     private void showContactActions(RecipientDirectory.Entry entry) {
-        String[] actions = history.hasLearned(entry.email)
-                ? new String[]{"Compose email", "Add / update in phone contacts",
-                "Remove learned copy", "Block future learning"}
-                : new String[]{"Compose email", "Add / update in phone contacts",
-                "Block future learning"};
+        ArrayList<String> actions = new ArrayList<>();
+        actions.add("Compose email");
+        actions.add("Add / update in phone contacts");
+        if (history.hasLearned(entry.email)) actions.add("Remove learned copy");
+        actions.add("Block future learning");
+
+        String key = CloudContactStore.normalizeEmail(entry.email);
+        if (cloudStore.mode(CloudContactStore.GOOGLE).canPushSelected()) {
+            actions.add(cloudStore.promoted(CloudContactStore.GOOGLE).contains(key)
+                    ? "Stop syncing this contact to Google"
+                    : "Sync this contact to Google");
+        }
+        if (cloudStore.mode(CloudContactStore.ICLOUD).canPushSelected()) {
+            actions.add(cloudStore.promoted(CloudContactStore.ICLOUD).contains(key)
+                    ? "Stop syncing this contact to iCloud"
+                    : "Sync this contact to iCloud");
+        }
+
         new AlertDialog.Builder(this)
                 .setTitle(entry.label())
-                .setItems(actions, (dialog, which) -> {
-                    String action = actions[which];
+                .setItems(actions.toArray(new String[0]), (dialog, which) -> {
+                    String action = actions.get(which);
                     if ("Compose email".equals(action)) compose(entry);
                     else if ("Add / update in phone contacts".equals(action)) openSystemContactEditor(entry);
                     else if ("Remove learned copy".equals(action)) {
@@ -250,10 +276,29 @@ public class SmartContactsActivity extends Activity {
                         render();
                     } else if ("Block future learning".equals(action)) {
                         history.block(entry.email);
+                        cloudStore.unpromote(CloudContactStore.GOOGLE, entry.email);
+                        cloudStore.unpromote(CloudContactStore.ICLOUD, entry.email);
                         render();
+                    } else if (action.contains("Google")) {
+                        toggleCloudSelection(CloudContactStore.GOOGLE, entry);
+                    } else if (action.contains("iCloud")) {
+                        toggleCloudSelection(CloudContactStore.ICLOUD, entry);
                     }
                 })
                 .show();
+    }
+
+    private void toggleCloudSelection(String provider, RecipientDirectory.Entry entry) {
+        String key = CloudContactStore.normalizeEmail(entry.email);
+        boolean selected = cloudStore.promoted(provider).contains(key);
+        if (selected) cloudStore.unpromote(provider, entry.email);
+        else cloudStore.promote(provider, entry.email);
+        String label = CloudContactStore.GOOGLE.equals(provider) ? "Google" : "iCloud";
+        Toast.makeText(this,
+                selected ? "Removed from " + label + " sync selection"
+                        : "Selected for " + label + " sync. Use Cloud Contacts → Sync now to apply.",
+                Toast.LENGTH_LONG).show();
+        render();
     }
 
     private void compose(RecipientDirectory.Entry entry) {
