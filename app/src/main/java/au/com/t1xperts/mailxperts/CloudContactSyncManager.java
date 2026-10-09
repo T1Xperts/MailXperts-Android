@@ -5,7 +5,6 @@ import android.content.Context;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /** Pull-first, explicit-push synchronisation coordinator for MX-QA-027. */
@@ -87,15 +86,12 @@ final class CloudContactSyncManager {
         int pulled = 0;
         if (records != null) {
             for (CloudContactRecord record : records) {
-                if (record == null || record.email.isEmpty()) continue;
+                if (record == null) continue;
                 if (record.deleted) {
-                    CloudContactRecord mapped = store.mappings(provider)
-                            .get(CloudContactStore.normalizeEmail(record.email));
-                    if (mapped != null) store.putMapping(provider,
-                            new CloudContactRecord(provider, mapped.remoteId, mapped.etag,
-                                    mapped.name, mapped.email, true));
+                    store.removeMappingByRemoteId(provider, record.remoteId);
                     continue;
                 }
+                if (record.email.isEmpty()) continue;
                 if (!RecipientDirectory.isLearnableEmail(record.email)) continue;
                 importable.add(record.asDirectoryEntry());
                 pulled++;
