@@ -1,0 +1,36 @@
+name: Build Expert Security
+
+on:
+  pull_request:
+    paths:
+      - 'build-expert/**'
+      - '.github/workflows/build-expert.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'build-expert/**'
+      - '.github/workflows/build-expert.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Security and orchestration tests
+        working-directory: build-expert
+        run: npm test
+      - name: Verify no provider secrets are embedded
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude='*.test.mjs' --exclude='README.md' '(sk-[A-Za-z0-9_-]{20,}|OPENAI_API_KEY[[:space:]]*=[[:space:]]*[^$])' app build-expert; then
+            echo 'Potential embedded provider secret found.' >&2
+            exit 1
+          fi
