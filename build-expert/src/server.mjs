@@ -4,6 +4,7 @@ import { ToolGateway } from "./tool-gateway.mjs";
 import { createReadOnlyHandlers } from "./read-only-handlers.mjs";
 import { BuildExpertOrchestrator } from "./orchestrator.mjs";
 import { OpenAIProvider } from "./providers/openai.mjs";
+import { redact } from "./redaction.mjs";
 
 const MAX_BODY_BYTES = 256000;
 
@@ -85,5 +86,5 @@ function json(res, status, payload) {
 
 function safe(error) {
   const message = error?.message || "Request failed";
-  return String(message).replace(/sk-[A-Za-z0-9_-]{12,}/g, "[REDACTED]").slice(0, 500);
+  return redact(String(message)).text.slice(0, 500);
 }
