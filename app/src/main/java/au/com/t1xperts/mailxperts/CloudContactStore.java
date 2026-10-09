@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -95,10 +94,14 @@ final class CloudContactStore {
         if (records != null) {
             for (CloudContactRecord record : records) {
                 if (record == null) continue;
+                if (record.deleted && !record.remoteId.isEmpty()) {
+                    removeRemoteId(merged, record.remoteId);
+                    continue;
+                }
                 String key = normalizeEmail(record.email);
                 if (key.isEmpty()) continue;
-                if (record.deleted) merged.remove(key);
-                else merged.put(key, record);
+                removeRemoteId(merged, record.remoteId);
+                merged.put(key, record);
             }
         }
         saveMappings(provider, merged.values());
@@ -106,12 +109,23 @@ final class CloudContactStore {
 
     synchronized void putMapping(String provider, CloudContactRecord record) {
         if (record == null) return;
+        LinkedHashMap<String, CloudContactRecord> merged = new LinkedHashMap<>(mappings(provider));
+        if (record.deleted && !record.remoteId.isEmpty()) {
+            removeRemoteId(merged, record.remoteId);
+            saveMappings(provider, merged.values());
+            return;
+        }
         String key = normalizeEmail(record.email);
         if (key.isEmpty()) return;
-        LinkedHashMap<String, CloudContactRecord> merged = new LinkedHashMap<>(mappings(provider));
-        if (record.deleted) merged.remove(key);
-        else merged.put(key, record);
+        removeRemoteId(merged, record.remoteId);
+        merged.put(key, record);
         saveMappings(provider, merged.values());
+    }
+
+    synchronized void removeMappingByRemoteId(String provider, String remoteId) {
+        if (remoteId == null || remoteId.trim().isEmpty()) return;
+        LinkedHashMap<String, CloudContactRecord> merged = new LinkedHashMap<>(mappings(provider));
+        if (removeRemoteId(merged, remoteId.trim())) saveMappings(provider, merged.values());
     }
 
     synchronized void clearProvider(String provider) {
@@ -122,6 +136,21 @@ final class CloudContactStore {
                 .remove("promoted_" + provider)
                 .remove("mappings_" + provider)
                 .apply();
+    }
+
+    private static boolean removeRemoteId(Map<String, CloudContactRecord> records, String remoteId) {
+        if (remoteId == null || remoteId.trim().isEmpty()) return false;
+        String target = remoteId.trim();
+        String found = null;
+        for (Map.Entry<String, CloudContactRecord> entry : records.entrySet()) {
+            if (target.equals(entry.getValue().remoteId)) {
+                found = entry.getKey();
+                break;
+            }
+        }
+        if (found == null) return false;
+        records.remove(found);
+        return true;
     }
 
     private void saveMappings(String provider, Iterable<CloudContactRecord> records) {
