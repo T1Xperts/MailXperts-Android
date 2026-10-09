@@ -5,6 +5,7 @@ export class OpenAIProvider {
     apiKey = process.env.OPENAI_API_KEY,
     model = process.env.OPENAI_MODEL || "gpt-6.1-sol",
     timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS || 90000),
+    maxOutputTokens = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 4000),
     fetchImpl = globalThis.fetch
   } = {}) {
     if (!apiKey) throw new Error("OPENAI_API_KEY is required on the Build Expert server");
@@ -12,6 +13,7 @@ export class OpenAIProvider {
     this.apiKey = apiKey;
     this.model = model;
     this.timeoutMs = Math.max(5000, Math.min(timeoutMs, 180000));
+    this.maxOutputTokens = Math.max(256, Math.min(maxOutputTokens, 12000));
     this.fetchImpl = fetchImpl;
   }
 
@@ -28,6 +30,7 @@ export class OpenAIProvider {
         body: JSON.stringify({
           model: this.model,
           store: false,
+          max_output_tokens: this.maxOutputTokens,
           instructions: instructionFor(task.type),
           input: [
             {
