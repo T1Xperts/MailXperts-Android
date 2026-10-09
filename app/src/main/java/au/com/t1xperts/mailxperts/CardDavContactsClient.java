@@ -48,7 +48,7 @@ final class CardDavContactsClient {
 
     Discovery discover(ContactSecretVault.CardDavCredential credential) throws Exception {
         requireCredential(credential);
-        String root = credential.endpoint;
+        String root = requireHttps(credential.endpoint);
         String principalXml = propfind(root, credential, 0,
                 "<d:propfind xmlns:d=\"DAV:\"><d:prop><d:current-user-principal/></d:prop></d:propfind>");
         String principalHref = firstText(parse(principalXml), "href");
@@ -73,6 +73,7 @@ final class CardDavContactsClient {
     List<CloudContactRecord> fetchAll(ContactSecretVault.CardDavCredential credential,
                                       String addressBookUrl) throws Exception {
         requireCredential(credential);
+        addressBookUrl = requireHttps(addressBookUrl);
         String report = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                 + "<card:addressbook-query xmlns:d=\"DAV:\" xmlns:card=\"urn:ietf:params:xml:ns:carddav\">"
                 + "<d:prop><d:getetag/><card:address-data/></d:prop>"
@@ -108,8 +109,9 @@ final class CardDavContactsClient {
                               String addressBookUrl, CloudContactRecord existing,
                               String name, String email) throws Exception {
         requireCredential(credential);
+        addressBookUrl = requireHttps(addressBookUrl);
         String remote = existing != null && !existing.remoteId.isEmpty()
-                ? existing.remoteId
+                ? requireHttps(existing.remoteId)
                 : join(addressBookUrl, "mailxperts-" + digest(email) + ".vcf");
         Request.Builder builder = requestBuilder(remote, credential)
                 .header("Content-Type", "text/vcard; charset=utf-8");
@@ -129,7 +131,7 @@ final class CardDavContactsClient {
     void delete(ContactSecretVault.CardDavCredential credential, CloudContactRecord record)
             throws Exception {
         if (record == null || record.remoteId.isEmpty()) return;
-        Request.Builder builder = requestBuilder(record.remoteId, credential).delete();
+        Request.Builder builder = requestBuilder(requireHttps(record.remoteId), credential).delete();
         if (!record.etag.isEmpty()) builder.header("If-Match", record.etag);
         try (Response response = http.newCall(builder.build()).execute()) {
             if (!response.isSuccessful() && response.code() != 404) {
@@ -140,7 +142,7 @@ final class CardDavContactsClient {
 
     private String propfind(String url, ContactSecretVault.CardDavCredential credential,
                             int depth, String body) throws Exception {
-        Request request = requestBuilder(url, credential)
+        Request request = requestBuilder(requireHttps(url), credential)
                 .header("Depth", String.valueOf(depth))
                 .method("PROPFIND", RequestBody.create(body, XML))
                 .build();
@@ -148,7 +150,8 @@ final class CardDavContactsClient {
     }
 
     private Request.Builder requestBuilder(String url, ContactSecretVault.CardDavCredential credential) {
-        return new Request.Builder().url(url)
+        String secure = requireHttps(url);
+        return new Request.Builder().url(secure)
                 .header("Authorization", Credentials.basic(credential.username, credential.appPassword))
                 .header("Accept", "application/xml,text/vcard,*/*");
     }
@@ -166,6 +169,8 @@ final class CardDavContactsClient {
     private static Document parse(String xml) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
@@ -272,11 +277,21 @@ final class CardDavContactsClient {
     }
 
     private static String resolve(String base, String href) throws Exception {
-        return new URL(new URL(base), href).toString();
+        URL resolved = new URL(new URL(requireHttps(base)), href);
+        return requireHttps(resolved.toString());
     }
 
     private static String join(String base, String child) {
-        return base.endsWith("/") ? base + child : base + "/" + child;
+        String secure = requireHttps(base);
+        return secure.endsWith("/") ? secure + child : secure + "/" + child;
+    }
+
+    static String requireHttps(String url) {
+        String value = url == null ? "" : url.trim();
+        if (!value.regionMatches(true, 0, "https://", 0, 8)) {
+            throw new IllegalArgumentException("CardDAV URL must use HTTPS");
+        }
+        return value;
     }
 
     private static void requireCredential(ContactSecretVault.CardDavCredential credential) {
