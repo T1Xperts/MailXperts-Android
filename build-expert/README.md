@@ -9,12 +9,12 @@ Server-side implementation foundation for **MX-QA-029**. This directory is delib
 - `store: false` on OpenAI requests from this service.
 - Read-only task classes: planning, review, build-failure explanation, build summary and risk estimation.
 - Repository/log context treated as untrusted data.
-- Secret/private-key/bearer redaction before provider transmission.
+- Secret/private-key/bearer redaction before provider transmission and before API error responses.
 - Per-task context limits and OpenAI output-token caps.
 - Privacy-preserving audit JSONL with hashes and usage metadata, not raw prompt/context/output.
 - Tool policy with read-only auto-allowed tools, human-gated low-risk writes and forbidden production/signing/secret operations.
 - Signed HMAC service API with timestamp validation and nonce replay protection.
-- Bounded read-only repo/log/build-status handlers with path-traversal protection.
+- Bounded read-only repo/log/build-status handlers with lexical and resolved-path traversal protection.
 - CI security tests.
 
 ## Deliberate safety boundary
@@ -75,7 +75,9 @@ Run with `npm run serve`. All POST requests to `/v1/tasks` and `/v1/tools/call` 
 - `X-MX-Nonce` — unique request nonce;
 - `X-MX-Signature` — HMAC-SHA256 of `timestamp + newline + nonce + newline + METHOD + newline + path + newline + raw body` using `BUILD_EXPERT_GATEWAY_SECRET`.
 
-The service rejects expired timestamps, replayed nonces, invalid signatures, oversized bodies, path traversal and any non-allow-listed tool. `/health` contains no secrets and is the only unsigned endpoint.
+The service rejects expired timestamps, replayed nonces, invalid signatures, oversized bodies, lexical/symlink path traversal and any non-allow-listed tool. `/health` contains no secrets and is the only unsigned endpoint.
+
+The built-in HTTP listener defaults to **localhost only**. If the service is exposed beyond the local/private runner boundary, place it behind authenticated private connectivity or a TLS-terminating reverse proxy. Do not expose the plain listener directly to the public Internet.
 
 ## Remaining MX-QA-029 phases
 
