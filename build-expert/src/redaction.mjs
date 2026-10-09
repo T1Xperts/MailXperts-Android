@@ -1,6 +1,6 @@
 const PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g;
 const AUTH_BEARER = /\b(authorization\s*:\s*bearer\s+)[^\s"']+/gi;
-const NAMED_SECRET = /\b(api[-_ ]?key|access[-_ ]?token|refresh[-_ ]?token|password|secret)\b\s*[:=]\s*["']?[^\s,"'}]+/gi;
+const NAMED_SECRET = /\b(api[-_ ]?key|access[-_ ]?token|refresh[-_ ]?token|password|secret)\b["']?\s*[:=]\s*["']?[^\s,"'}]+/gi;
 const OPENAI_STYLE_KEY = /\bsk-[A-Za-z0-9_-]{12,}\b/g;
 
 export function redact(value) {
