@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -21,13 +21,26 @@ test("signed gateway authentication rejects tampering and replay", () => {
   assert.equal(auth.verify({ ...other, signature }).reason, "invalid_signature");
 });
 
-test("read-only repo handler blocks path traversal", async () => {
-  const root = await mkdtemp(join(tmpdir(), "mx-repo-"));
+test("read-only repo handler blocks lexical and symlink path traversal", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "mx-roots-"));
+  const root = join(parent, "repo");
+  await mkdir(root);
   await writeFile(join(root, "README.md"), "safe", "utf8");
+  const outside = join(parent, "outside.txt");
+  await writeFile(outside, "outside-secret", "utf8");
+  await symlink(outside, join(root, "escape-link.txt"));
+
   const gateway = new ToolGateway(createReadOnlyHandlers({ repoRoot: root, logRoot: root }));
   const allowed = await gateway.call("repo.read", { path: "README.md" });
   assert.equal(allowed.content, "safe");
-  await assert.rejects(() => gateway.call("repo.read", { path: "../escape.txt" }), error => error.code === "PATH_TRAVERSAL");
+  await assert.rejects(
+    () => gateway.call("repo.read", { path: "../escape.txt" }),
+    error => error.code === "PATH_TRAVERSAL"
+  );
+  await assert.rejects(
+    () => gateway.call("repo.read", { path: "escape-link.txt" }),
+    error => error.code === "PATH_TRAVERSAL"
+  );
 });
 
 test("remote tool surface still denies any write or production action", async () => {
