@@ -39,6 +39,8 @@ final class Navigation {
                 () -> openServer(activity, accountId, MailRepository.INBOX));
         add(drawer, panel, activity, accountId, "★ Smart Priority",
                 () -> openPriority(activity, accountId));
+        add(drawer, panel, activity, accountId, "✨ MailXperts AI",
+                () -> openAi(activity, accountId));
         add(drawer, panel, activity, accountId, "Sent",
                 () -> openServer(activity, accountId, MailRepository.SENT));
         add(drawer, panel, activity, accountId, "Spam / Junk",
@@ -128,6 +130,12 @@ final class Navigation {
         intent.putExtra("account_id", accountId);
         intent.putExtra("folder_kind", MailRepository.INBOX);
         intent.putExtra("smart_only", true);
+        activity.startActivity(intent);
+    }
+
+    private static void openAi(Activity activity, String accountId) {
+        Intent intent = new Intent(activity, AiAssistantActivity.class);
+        intent.putExtra("account_id", accountId);
         activity.startActivity(intent);
     }
 
