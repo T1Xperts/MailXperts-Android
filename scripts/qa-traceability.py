@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs/traceability/WORK_BREAKDOWN_DEPENDENCIES.json"
 RTM = ROOT / "docs/traceability/RTM.csv"
 OUT = ROOT / "build/traceability/QA-RESULTS.json"
+QA_PLAN = ROOT / "docs/traceability/QA_CASES_WAVES.json"
 EXPECTED = {f"MX-QA-{n:03d}" for n in [29, 30]}
 EXPECTED.update(f"AI-{n:03d}" for n in range(1, 37))
 MUST_DRAFT_ONLY = {"draft_only", "no_automatic_post", "no_automatic_validate",
@@ -26,6 +27,7 @@ def validate():
     manifest = json.loads(SOURCE.read_text(encoding="utf-8"))
     with RTM.open(newline="", encoding="utf-8-sig") as stream:
         rtm_rows = list(csv.DictReader(stream))
+    qa_plan = json.loads(QA_PLAN.read_text(encoding="utf-8"))
     problems = []
     checks = []
 
@@ -116,6 +118,24 @@ def validate():
                   "; ".join(x["id"] for x in r["internal_dependencies"])
               for r in reqs),
           "RTM wave/package/dependency columns out of sync")
+    planned = qa_plan["cases"]
+    expected_cases = {f"TC-{r['id']}-{n:02d}"
+                      for r in reqs for n in range(1, 4)}
+    check("114 QA scenarios defined exactly once",
+          len(planned) == qa_plan["case_count"] == 114 and
+          len({c["id"] for c in planned}) == 114 and
+          {c["id"] for c in planned} == expected_cases,
+          "Expected three planned cases for each of the 38 unfinished requirements")
+    check("QA plans do not falsely claim execution",
+          all(c["status"] == "PLANNED_NOT_RUN" and not c["evidence_url"]
+              for c in planned),
+          "Proposed test cases must not be marked as executed or passed")
+    check("QA layer breakdown",
+          Counter(c["test_layer"] for c in planned) == {
+              "automated_functional_or_contract": 38,
+              "automated_negative_security_regression": 38,
+              "device_or_provider_UAT": 38},
+          "Missing functional, negative/security or UAT test case")
     check("No unfinished feature falsely marked as production released",
           all("RELEASED" not in by_rtm.get(r["id"], {}).get("Production_Release_Gate", "").upper()
               or by_rtm.get(r["id"], {}).get("Production_Release_Gate") == "NOT_RELEASED"
@@ -125,7 +145,7 @@ def validate():
     result = {
         "kind": "traceability_contract_QA_only",
         "scope": {"rtm_total": len(rtm_rows), "unfinished": len(reqs),
-                  "internal": internals, "external": externals, "overlap": overlap},
+                  "internal": internals, "external": externals, "overlap": overlap, "planned_cases": len(planned)},
         "result": "PASS" if not problems else "FAIL",
         "checks": checks, "errors": problems,
         "limitations": [
