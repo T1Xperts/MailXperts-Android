@@ -1,14 +1,21 @@
 # MailXperts Requirements Traceability Matrix (RTM)
 
-> **Execution update, 21 October 2026:** Wave 0 engineering preparation has STARTED on [branch `feature/mailxperts-wave0-sdlc-rtm-20261021`](https://github.com/T1Xperts/MailXperts-Android/tree/feature/mailxperts-wave0-sdlc-rtm-20261021). The [32-column RTM](RTM.csv) links the 38 incomplete stories to WBS packages, internal dependency IDs, external readiness, design approval, automated QA evidence, UAT and production release gates. See [machine-readable dependency graph](WORK_BREAKDOWN_DEPENDENCIES.json) and [Wave 0–3 HLD/LLD draft](../architecture/MAILXPERTS_WAVES_HLD_LLD.md). The [static QA validator](../../scripts/qa-traceability.py) validates traceability and safety contracts, not product feature correctness. **Designs are DRAFT/PENDING APPROVAL; unfinished feature execution remains NOT RUN unless existing CI is explicitly linked. No unimplemented feature has passed QA/UAT or been released.**
+> **Execution update, 21 October 2026:** Wave 0 engineering preparation has STARTED on [branch `feature/mailxperts-wave0-sdlc-rtm-20261021`](https://github.com/T1Xperts/MailXperts-Android/tree/feature/mailxperts-wave0-sdlc-rtm-20261021). The [34-column RTM](RTM.csv) links the 38 incomplete stories to WBS packages, internal dependency IDs, external readiness, design approval, automated QA evidence, UAT and production release gates. See [machine-readable dependency graph](WORK_BREAKDOWN_DEPENDENCIES.json) and [Wave 0–3 HLD/LLD draft](../architecture/MAILXPERTS_WAVES_HLD_LLD.md). The [114-case proposed QA plan](QA_CASES_WAVES.json) is linked from the RTM but remains **NOT RUN** until individual executable test evidence is available. The [static QA validator](../../scripts/qa-traceability.py) validates traceability and safety contracts, not product feature correctness. **Designs are DRAFT/PENDING APPROVAL; unfinished feature execution remains NOT RUN unless existing CI is explicitly linked. No unimplemented feature has passed QA/UAT or been released.**
 
 **As-of:** 20 October 2026 (Australia/Melbourne) · **Repository:** [T1Xperts/MailXperts-Android](https://github.com/T1Xperts/MailXperts-Android) · **Baseline:** [Master QA #3](https://github.com/T1Xperts/MailXperts-Android/issues/3), [AI epic #29](https://github.com/T1Xperts/MailXperts-Android/issues/29), [Release control #11](https://github.com/T1Xperts/MailXperts-Android/issues/11).
 
 ## Deliverables
 
-1. **[RTM.csv](RTM.csv)**: complete 66-row, 23-column machine-readable traceability matrix with requirement → HLD → LLD → code → PR → proposed test case → actual test-file evidence → test cycle/results → QA pass/fail → bugs → release/version/log; hyperlinks and gap markers.
+1. **[RTM.csv](RTM.csv)**: complete 66-row, 34-column machine-readable traceability matrix with requirement → HLD → LLD → code → PR → proposed test case → actual test-file evidence → test cycle/results → QA pass/fail → bugs → release/version/log; hyperlinks and gap markers.
 2. **[DESIGN_AND_TEST_CATALOG.md](DESIGN_AND_TEST_CATALOG.md)**: high-level design outlines, low-level component or proposed implementation descriptions, and proposed traceable test cases for **every one of the 66 requirements**.
 3. This document: concise SDLC baseline, per-feature trace summary, evidence/release ledger and gap/closure rules.
+
+## Current execution control links
+
+- [WBS dependency graph: 38 requirements, 10 packages](WORK_BREAKDOWN_DEPENDENCIES.json)
+- [Wave 0–3 HLD/LLD DRAFT](../architecture/MAILXPERTS_WAVES_HLD_LLD.md)
+- [114 planned QA cases across functional, security and UAT layers](QA_CASES_WAVES.json)
+- [Wave 0 static dependency and RTM QA validator](../../scripts/qa-traceability.py)
 
 ## Status summary (reconciled from recorded issue/PR evidence)
 
