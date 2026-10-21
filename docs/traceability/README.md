@@ -1,5 +1,7 @@
 # MailXperts Requirements Traceability Matrix (RTM)
 
+> **Execution update, 21 October 2026:** Wave 0 engineering preparation has STARTED on [branch `feature/mailxperts-wave0-sdlc-rtm-20261021`](https://github.com/T1Xperts/MailXperts-Android/tree/feature/mailxperts-wave0-sdlc-rtm-20261021). The [32-column RTM](RTM.csv) links the 38 incomplete stories to WBS packages, internal dependency IDs, external readiness, design approval, automated QA evidence, UAT and production release gates. See [machine-readable dependency graph](WORK_BREAKDOWN_DEPENDENCIES.json) and [Wave 0–3 HLD/LLD draft](../architecture/MAILXPERTS_WAVES_HLD_LLD.md). The [static QA validator](../../scripts/qa-traceability.py) validates traceability and safety contracts, not product feature correctness. **Designs are DRAFT/PENDING APPROVAL; unfinished feature execution remains NOT RUN unless existing CI is explicitly linked. No unimplemented feature has passed QA/UAT or been released.**
+
 **As-of:** 20 October 2026 (Australia/Melbourne) · **Repository:** [T1Xperts/MailXperts-Android](https://github.com/T1Xperts/MailXperts-Android) · **Baseline:** [Master QA #3](https://github.com/T1Xperts/MailXperts-Android/issues/3), [AI epic #29](https://github.com/T1Xperts/MailXperts-Android/issues/29), [Release control #11](https://github.com/T1Xperts/MailXperts-Android/issues/11).
 
 ## Deliverables
