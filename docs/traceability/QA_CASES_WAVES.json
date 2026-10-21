@@ -1,0 +1,1149 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-10-21",
+  "scope": "38 unfinished requirement IDs; 114 PROPOSED cases only",
+  "policy": "These planned cases have NOT been executed. Prior aggregate CI PASS and Product Owner acceptance remain separately sourced in RTM.",
+  "case_count": 114,
+  "cases": [
+    {
+      "id": "TC-MX-QA-029-01",
+      "requirement_id": "MX-QA-029",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Build Expert provider orchestration foundation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-MX-QA-029-02",
+      "requirement_id": "MX-QA-029",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "A prompt-injected repository or unapproved coding request never accesses secrets, starts unrestricted commands or triggers a production merge/signing action.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-MX-QA-029-03",
+      "requirement_id": "MX-QA-029",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Build Expert provider orchestration foundation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-MX-QA-030-01",
+      "requirement_id": "MX-QA-030",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Provider OAuth2/XOAUTH2 device validation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-MX-QA-030-02",
+      "requirement_id": "MX-QA-030",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Missing Gmail mail scope, revoked consent or rejected IMAP XOAUTH2 returns a safe actionable error without storing a bad account credential.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-MX-QA-030-03",
+      "requirement_id": "MX-QA-030",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Provider OAuth2/XOAUTH2 device validation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-035-01",
+      "requirement_id": "AI-035",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise AI privacy, consent and on-device controls with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-035-02",
+      "requirement_id": "AI-035",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Revoked consent stops cloud model calls; unsupported on-device processing cannot be misrepresented.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-035-03",
+      "requirement_id": "AI-035",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate AI privacy, consent and on-device controls on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-001-01",
+      "requirement_id": "AI-001",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Email/thread summarisation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-001-02",
+      "requirement_id": "AI-001",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Injected instructions inside an email cannot rewrite the trusted summarisation task or disclose credentials.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-001-03",
+      "requirement_id": "AI-001",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Email/thread summarisation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-002-01",
+      "requirement_id": "AI-002",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Contextual reply drafting with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-002-02",
+      "requirement_id": "AI-002",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Generated reply remains editable and neither generated text nor an email-body prompt can invoke Send.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-002-03",
+      "requirement_id": "AI-002",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Contextual reply drafting on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-003-01",
+      "requirement_id": "AI-003",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Ask AI questions on email/thread with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-003-02",
+      "requirement_id": "AI-003",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Unknown/unauthorised message references are rejected and the model reports insufficient evidence.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-003-03",
+      "requirement_id": "AI-003",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Ask AI questions on email/thread on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-004-01",
+      "requirement_id": "AI-004",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Natural-language mailbox search planning with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-004-02",
+      "requirement_id": "AI-004",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Malicious search instructions cannot trigger account deletion, remote data export or mailbox modification.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-004-03",
+      "requirement_id": "AI-004",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Natural-language mailbox search planning on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-005-01",
+      "requirement_id": "AI-005",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise AI Priority Inbox with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-005-02",
+      "requirement_id": "AI-005",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Priority scoring cannot read messages outside selected account permissions or fake source message keys.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-005-03",
+      "requirement_id": "AI-005",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate AI Priority Inbox on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-006-01",
+      "requirement_id": "AI-006",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Action/date/decision extraction with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-006-02",
+      "requirement_id": "AI-006",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Missing/ambiguous deadlines remain unresolved rather than fabricating due dates.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-006-03",
+      "requirement_id": "AI-006",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Action/date/decision extraction on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-007-01",
+      "requirement_id": "AI-007",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise AI rewrite/tone change with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-007-02",
+      "requirement_id": "AI-007",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Rewrite output never sends mail or silently modifies the saved composer draft.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-007-03",
+      "requirement_id": "AI-007",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate AI rewrite/tone change on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-008-01",
+      "requirement_id": "AI-008",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise One-tap suggested replies with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-008-02",
+      "requirement_id": "AI-008",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Suggested replies cannot auto-send or bypass user review.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-008-03",
+      "requirement_id": "AI-008",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate One-tap suggested replies on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-014-01",
+      "requirement_id": "AI-014",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Tone and clarity coaching with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-014-02",
+      "requirement_id": "AI-014",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Tone-coaching recommendations do not silently modify or send a user draft.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-014-03",
+      "requirement_id": "AI-014",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Tone and clarity coaching on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-015-01",
+      "requirement_id": "AI-015",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Permissioned personal writing style with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-015-02",
+      "requirement_id": "AI-015",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "No writing-style learning before opt-in and opt-out deletes or disables personalization.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-015-03",
+      "requirement_id": "AI-015",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Permissioned personal writing style on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-024-01",
+      "requirement_id": "AI-024",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Translation and multilingual replies with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-024-02",
+      "requirement_id": "AI-024",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Translation preserves amounts and named entities and never sends without review.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-024-03",
+      "requirement_id": "AI-024",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Translation and multilingual replies on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-029-01",
+      "requirement_id": "AI-029",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise AI subject line suggestions with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-029-02",
+      "requirement_id": "AI-029",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Generated subject suggestion cannot silently replace a saved draft or send message.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-029-03",
+      "requirement_id": "AI-029",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate AI subject line suggestions on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-030-01",
+      "requirement_id": "AI-030",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Organisation templates with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-030-02",
+      "requirement_id": "AI-030",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Unauthorised team users cannot read, modify or publish an organisation template.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-030-03",
+      "requirement_id": "AI-030",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Organisation templates on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-009-01",
+      "requirement_id": "AI-009",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Unanswered/promised follow-up detection with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-009-02",
+      "requirement_id": "AI-009",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Retries do not duplicate follow-up reminders and revoked notification consent suppresses new alerts.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-009-03",
+      "requirement_id": "AI-009",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Unanswered/promised follow-up detection on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-010-01",
+      "requirement_id": "AI-010",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Daily priority inbox briefing with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-010-02",
+      "requirement_id": "AI-010",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Daily briefing excludes revoked/unauthorised accounts and does not fabricate actions.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-010-03",
+      "requirement_id": "AI-010",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Daily priority inbox briefing on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-021-01",
+      "requirement_id": "AI-021",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Meaning-aware smart notifications with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-021-02",
+      "requirement_id": "AI-021",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Muted and revoked accounts never trigger semantic notification.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-021-03",
+      "requirement_id": "AI-021",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Meaning-aware smart notifications on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-027-01",
+      "requirement_id": "AI-027",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Explain AI priority decisions with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-027-02",
+      "requirement_id": "AI-027",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Explanations identify supported ranking factors without inventing private attributes.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-027-03",
+      "requirement_id": "AI-027",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Explain AI priority decisions on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-031-01",
+      "requirement_id": "AI-031",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Voice inbox briefing with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-031-02",
+      "requirement_id": "AI-031",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Voice UI obeys microphone and account consent and exposes no other account's mail.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-031-03",
+      "requirement_id": "AI-031",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Voice inbox briefing on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-012-01",
+      "requirement_id": "AI-012",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Attachment intelligence with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-012-02",
+      "requirement_id": "AI-012",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Unsupported, oversized or malformed attachments fail safely; malicious content cannot initiate tools.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-012-03",
+      "requirement_id": "AI-012",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Attachment intelligence on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-013-01",
+      "requirement_id": "AI-013",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Multi-email synthesis with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-013-02",
+      "requirement_id": "AI-013",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Multi-email synthesis cannot infer unsupported claims or expose unselected accounts.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-013-03",
+      "requirement_id": "AI-013",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Multi-email synthesis on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-032-01",
+      "requirement_id": "AI-032",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Customer/project timeline with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-032-02",
+      "requirement_id": "AI-032",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Out-of-order dates and unrelated threads must not create an unsupported customer/project timeline.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-032-03",
+      "requirement_id": "AI-032",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Customer/project timeline on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-033-01",
+      "requirement_id": "AI-033",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Business mailbox communication analytics with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-033-02",
+      "requirement_id": "AI-033",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Cross-tenant and small-cohort analytics cannot leak source email contents.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-033-03",
+      "requirement_id": "AI-033",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Business mailbox communication analytics on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-022-01",
+      "requirement_id": "AI-022",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Smart AI mail classification with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-022-02",
+      "requirement_id": "AI-022",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "User classification override persists and wrong model label is reversible.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-022-03",
+      "requirement_id": "AI-022",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Smart AI mail classification on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-023-01",
+      "requirement_id": "AI-023",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Newsletter/noise filtering with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-023-02",
+      "requirement_id": "AI-023",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "VIP/direct communication is not automatically hidden as newsletter noise.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-023-03",
+      "requirement_id": "AI-023",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Newsletter/noise filtering on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-028-01",
+      "requirement_id": "AI-028",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Confirmed unsubscribe/block recommendations with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-028-02",
+      "requirement_id": "AI-028",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "A malicious unsubscribe URL is never automatically visited and block actions require confirmation.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-028-03",
+      "requirement_id": "AI-028",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Confirmed unsubscribe/block recommendations on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-011-01",
+      "requirement_id": "AI-011",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Cross-account AI Q&A with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-011-02",
+      "requirement_id": "AI-011",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Cross-account query cannot read a disconnected or non-consented mailbox.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-011-03",
+      "requirement_id": "AI-011",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Cross-account AI Q&A on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-025-01",
+      "requirement_id": "AI-025",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise ChatGPT ↔ MailXperts integration with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-025-02",
+      "requirement_id": "AI-025",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Revoked ChatGPT connector scope cannot search or mutate another user's messages.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-025-03",
+      "requirement_id": "AI-025",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate ChatGPT ↔ MailXperts integration on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-017-01",
+      "requirement_id": "AI-017",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Email-to-task creation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-017-02",
+      "requirement_id": "AI-017",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "No task is saved to an external provider before user approval.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-017-03",
+      "requirement_id": "AI-017",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Email-to-task creation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-018-01",
+      "requirement_id": "AI-018",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Email-to-calendar event with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-018-02",
+      "requirement_id": "AI-018",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Invalid or missing date/time never creates or sends a calendar event without explicit confirmation.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-018-03",
+      "requirement_id": "AI-018",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Email-to-calendar event on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-019-01",
+      "requirement_id": "AI-019",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise AI-assisted scheduling with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-019-02",
+      "requirement_id": "AI-019",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Revoked calendar scopes and conflicting time zones must not disclose private availability.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-019-03",
+      "requirement_id": "AI-019",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate AI-assisted scheduling on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-020-01",
+      "requirement_id": "AI-020",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Mailbox rule creation in plain English with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-020-02",
+      "requirement_id": "AI-020",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Untrusted subject/body cannot create an unrestricted destructive mailbox rule.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-020-03",
+      "requirement_id": "AI-020",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Mailbox rule creation in plain English on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-026-01",
+      "requirement_id": "AI-026",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Natural-language automation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-026-02",
+      "requirement_id": "AI-026",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Workflow replay, invalid authorization or scheduler retries cannot execute destructive actions without reapproval.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-026-03",
+      "requirement_id": "AI-026",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Natural-language automation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-016-01",
+      "requirement_id": "AI-016",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Invoice and bill extraction with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-016-02",
+      "requirement_id": "AI-016",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Ambiguous invoice fields and currency/tax cannot be silently invented; malformed PDFs cannot execute instructions.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-016-03",
+      "requirement_id": "AI-016",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Invoice and bill extraction on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-034-01",
+      "requirement_id": "AI-034",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Explicit BillPay initiation with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-034-02",
+      "requirement_id": "AI-034",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "No payment may initiate or complete without step-up identity, payee confirmation and explicit human approval.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-034-03",
+      "requirement_id": "AI-034",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Explicit BillPay initiation on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-036-01",
+      "requirement_id": "AI-036",
+      "test_layer": "automated_functional_or_contract",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Unit/mocked integration environment with deterministic fixture and approved component design",
+      "scenario": "Exercise Draft-only Odoo vendor bill with valid user-authorised input and established source message/account permissions.",
+      "expected": "Proposed response/record is correct, source-traceable and obeys applicable approval/permission boundary; individual assertions to be reviewed against final LLD.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-036-02",
+      "requirement_id": "AI-036",
+      "test_layer": "automated_negative_security_regression",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Invalid, adversarial, duplicate or revoked-permission fixture; no production accounts/credentials",
+      "scenario": "Duplicate invoice, wrong company/vendor, or injected post/pay instruction must never create a posted/approved/paid Odoo record.",
+      "expected": "Fail closed; no unauthorised read/write, auto-send, auto-post, auto-pay or secret leakage; clear diagnostic/audit record.",
+      "evidence_url": null
+    },
+    {
+      "id": "TC-AI-036-03",
+      "requirement_id": "AI-036",
+      "test_layer": "device_or_provider_UAT",
+      "status": "PLANNED_NOT_RUN",
+      "preconditions": "Reviewed HLD/LLD, CI-green build, authorised device/provider/host, named Product Owner/tester",
+      "scenario": "Validate Draft-only Odoo vendor bill on the supported Android build with a real account when permitted.",
+      "expected": "Product Owner accepts demonstrated behaviour with dated evidence, build SHA, test account/provider, actual result and no unresolved blockers.",
+      "evidence_url": null
+    }
+  ]
+}
