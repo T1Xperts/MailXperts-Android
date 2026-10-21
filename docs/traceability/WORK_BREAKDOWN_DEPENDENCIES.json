@@ -1,0 +1,1027 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot": "2026-10-21",
+  "source_rtm": "docs/traceability/RTM.csv",
+  "authoritative_issues": [
+    3,
+    11,
+    29,
+    31
+  ],
+  "evidence_standard": "Engineering dependency proposals. External planned prerequisites are not confirmed blockers; interfaces within MX-QA-029 need not wait for all of MX-QA-029 closure.",
+  "packages": [
+    {
+      "id": "BP-01",
+      "name": "AI platform and P0 MVP",
+      "requirements": [
+        "MX-QA-029",
+        "AI-001",
+        "AI-002",
+        "AI-003",
+        "AI-004",
+        "AI-005",
+        "AI-006",
+        "AI-007"
+      ],
+      "size": 8
+    },
+    {
+      "id": "BP-02",
+      "name": "Intelligent composition",
+      "requirements": [
+        "AI-008",
+        "AI-014",
+        "AI-015",
+        "AI-024",
+        "AI-029",
+        "AI-030"
+      ],
+      "size": 6
+    },
+    {
+      "id": "BP-03",
+      "name": "Attention, briefing and voice",
+      "requirements": [
+        "AI-009",
+        "AI-010",
+        "AI-021",
+        "AI-027",
+        "AI-031"
+      ],
+      "size": 5
+    },
+    {
+      "id": "BP-04",
+      "name": "Tasks, calendar and workflow automation",
+      "requirements": [
+        "AI-017",
+        "AI-018",
+        "AI-019",
+        "AI-020",
+        "AI-026"
+      ],
+      "size": 5
+    },
+    {
+      "id": "BP-05",
+      "name": "Attachment, context and analytics",
+      "requirements": [
+        "AI-012",
+        "AI-013",
+        "AI-032",
+        "AI-033"
+      ],
+      "size": 4
+    },
+    {
+      "id": "BP-06",
+      "name": "Classification and noise controls",
+      "requirements": [
+        "AI-022",
+        "AI-023",
+        "AI-028"
+      ],
+      "size": 3
+    },
+    {
+      "id": "BP-07",
+      "name": "Invoice, Odoo and payments",
+      "requirements": [
+        "AI-016",
+        "AI-034",
+        "AI-036"
+      ],
+      "size": 3
+    },
+    {
+      "id": "BP-08",
+      "name": "Cross-account AI and ChatGPT",
+      "requirements": [
+        "AI-011",
+        "AI-025"
+      ],
+      "size": 2
+    },
+    {
+      "id": "BP-09",
+      "name": "Privacy and consent",
+      "requirements": [
+        "AI-035"
+      ],
+      "size": 1
+    },
+    {
+      "id": "BP-10",
+      "name": "Provider authentication acceptance",
+      "requirements": [
+        "MX-QA-030"
+      ],
+      "size": 1
+    }
+  ],
+  "requirements": [
+    {
+      "id": "MX-QA-029",
+      "feature": "Build Expert provider orchestration foundation",
+      "package_id": "BP-01",
+      "wave": 0,
+      "priority": "P1",
+      "internal_dependencies": [],
+      "external_prerequisites": [
+        {
+          "description": "Server-side runner, provider credentials and security operating environment",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "partially_implemented",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-MX-QA-029",
+      "qa_case_id": "TC-MX-QA-029-01",
+      "qa_status": "partial_automated_QA_only",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "MX-QA-030",
+      "feature": "Provider OAuth2/XOAUTH2 device validation",
+      "package_id": "BP-10",
+      "wave": 0,
+      "priority": "P1",
+      "internal_dependencies": [],
+      "external_prerequisites": [
+        {
+          "description": "Gmail OAuth production identity, Google consent and physical device/IMAP acceptance",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_device_UAT_pending",
+      "hld_ref": "HLD-BP-10",
+      "lld_ref": "LLD-MX-QA-030",
+      "qa_case_id": "TC-MX-QA-030-01",
+      "qa_status": "automated_pass_device_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-035",
+      "feature": "AI privacy, consent and on-device controls",
+      "package_id": "BP-09",
+      "wave": 0,
+      "priority": "P1",
+      "internal_dependencies": [],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-09",
+      "lld_ref": "LLD-AI-035",
+      "qa_case_id": "TC-AI-035-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-001",
+      "feature": "Email/thread summarisation",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-001",
+      "qa_case_id": "TC-AI-001-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-002",
+      "feature": "Contextual reply drafting",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-002",
+      "qa_case_id": "TC-AI-002-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": [
+        "no_automatic_send"
+      ]
+    },
+    {
+      "id": "AI-003",
+      "feature": "Ask AI questions on email/thread",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-003",
+      "qa_case_id": "TC-AI-003-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-004",
+      "feature": "Natural-language mailbox search planning",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-004",
+      "qa_case_id": "TC-AI-004-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-005",
+      "feature": "AI Priority Inbox",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-005",
+      "qa_case_id": "TC-AI-005-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-006",
+      "feature": "Action/date/decision extraction",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-006",
+      "qa_case_id": "TC-AI-006-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-007",
+      "feature": "AI rewrite/tone change",
+      "package_id": "BP-01",
+      "wave": 1,
+      "priority": "P0",
+      "internal_dependencies": [
+        {
+          "id": "MX-QA-029",
+          "relationship": "existing_shared_AI_gateway_foundation_only"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Deployed HTTPS AI gateway and server-only model credentials",
+          "evidence_state": "documented_pending",
+          "confirmed_blocked": true
+        }
+      ],
+      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "hld_ref": "HLD-BP-01",
+      "lld_ref": "LLD-AI-007",
+      "qa_case_id": "TC-AI-007-01",
+      "qa_status": "automated_pass_live_UAT_pending",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-008",
+      "feature": "One-tap suggested replies",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-002",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-008",
+      "qa_case_id": "TC-AI-008-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-014",
+      "feature": "Tone and clarity coaching",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-007",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-014",
+      "qa_case_id": "TC-AI-014-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-015",
+      "feature": "Permissioned personal writing style",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-002",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-035",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-015",
+      "qa_case_id": "TC-AI-015-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-024",
+      "feature": "Translation and multilingual replies",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-002",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-024",
+      "qa_case_id": "TC-AI-024-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-029",
+      "feature": "AI subject line suggestions",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-002",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-029",
+      "qa_case_id": "TC-AI-029-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-030",
+      "feature": "Organisation templates",
+      "package_id": "BP-02",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-002",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-035",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-02",
+      "lld_ref": "LLD-AI-030",
+      "qa_case_id": "TC-AI-030-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-009",
+      "feature": "Unanswered/promised follow-up detection",
+      "package_id": "BP-03",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-006",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-03",
+      "lld_ref": "LLD-AI-009",
+      "qa_case_id": "TC-AI-009-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-010",
+      "feature": "Daily priority inbox briefing",
+      "package_id": "BP-03",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-005",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-006",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-009",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-03",
+      "lld_ref": "LLD-AI-010",
+      "qa_case_id": "TC-AI-010-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-021",
+      "feature": "Meaning-aware smart notifications",
+      "package_id": "BP-03",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-005",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-03",
+      "lld_ref": "LLD-AI-021",
+      "qa_case_id": "TC-AI-021-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-027",
+      "feature": "Explain AI priority decisions",
+      "package_id": "BP-03",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-005",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-03",
+      "lld_ref": "LLD-AI-027",
+      "qa_case_id": "TC-AI-027-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-031",
+      "feature": "Voice inbox briefing",
+      "package_id": "BP-03",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-010",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-03",
+      "lld_ref": "LLD-AI-031",
+      "qa_case_id": "TC-AI-031-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-012",
+      "feature": "Attachment intelligence",
+      "package_id": "BP-05",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-001",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-05",
+      "lld_ref": "LLD-AI-012",
+      "qa_case_id": "TC-AI-012-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-013",
+      "feature": "Multi-email synthesis",
+      "package_id": "BP-05",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-001",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-05",
+      "lld_ref": "LLD-AI-013",
+      "qa_case_id": "TC-AI-013-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-032",
+      "feature": "Customer/project timeline",
+      "package_id": "BP-05",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-013",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-05",
+      "lld_ref": "LLD-AI-032",
+      "qa_case_id": "TC-AI-032-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-033",
+      "feature": "Business mailbox communication analytics",
+      "package_id": "BP-05",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-05",
+      "lld_ref": "LLD-AI-033",
+      "qa_case_id": "TC-AI-033-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-022",
+      "feature": "Smart AI mail classification",
+      "package_id": "BP-06",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-06",
+      "lld_ref": "LLD-AI-022",
+      "qa_case_id": "TC-AI-022-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-023",
+      "feature": "Newsletter/noise filtering",
+      "package_id": "BP-06",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-022",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-06",
+      "lld_ref": "LLD-AI-023",
+      "qa_case_id": "TC-AI-023-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-028",
+      "feature": "Confirmed unsubscribe/block recommendations",
+      "package_id": "BP-06",
+      "wave": 2,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-023",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-06",
+      "lld_ref": "LLD-AI-028",
+      "qa_case_id": "TC-AI-028-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-011",
+      "feature": "Cross-account AI Q&A",
+      "package_id": "BP-08",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-003",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-035",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-08",
+      "lld_ref": "LLD-AI-011",
+      "qa_case_id": "TC-AI-011-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-025",
+      "feature": "ChatGPT ↔ MailXperts integration",
+      "package_id": "BP-08",
+      "wave": 2,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-011",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-035",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "ChatGPT connector installation, authentication and external integration registration",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-08",
+      "lld_ref": "LLD-AI-025",
+      "qa_case_id": "TC-AI-025-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-017",
+      "feature": "Email-to-task creation",
+      "package_id": "BP-04",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-006",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-04",
+      "lld_ref": "LLD-AI-017",
+      "qa_case_id": "TC-AI-017-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-018",
+      "feature": "Email-to-calendar event",
+      "package_id": "BP-04",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-006",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-04",
+      "lld_ref": "LLD-AI-018",
+      "qa_case_id": "TC-AI-018-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-019",
+      "feature": "AI-assisted scheduling",
+      "package_id": "BP-04",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-018",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Authorised provider calendar free/busy endpoints and consent (if provider-backed)",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-04",
+      "lld_ref": "LLD-AI-019",
+      "qa_case_id": "TC-AI-019-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-020",
+      "feature": "Mailbox rule creation in plain English",
+      "package_id": "BP-04",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-004",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-04",
+      "lld_ref": "LLD-AI-020",
+      "qa_case_id": "TC-AI-020-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-026",
+      "feature": "Natural-language automation",
+      "package_id": "BP-04",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-017",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-020",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Durable workflow runner, scheduler and hosting",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-04",
+      "lld_ref": "LLD-AI-026",
+      "qa_case_id": "TC-AI-026-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-016",
+      "feature": "Invoice and bill extraction",
+      "package_id": "BP-07",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-006",
+          "relationship": "functional_predecessor"
+        },
+        {
+          "id": "AI-012",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-07",
+      "lld_ref": "LLD-AI-016",
+      "qa_case_id": "TC-AI-016-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": []
+    },
+    {
+      "id": "AI-034",
+      "feature": "Explicit BillPay initiation",
+      "package_id": "BP-07",
+      "wave": 3,
+      "priority": "P2",
+      "internal_dependencies": [
+        {
+          "id": "AI-016",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Regulated payment integration, provider authorisation and step-up identity",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-07",
+      "lld_ref": "LLD-AI-034",
+      "qa_case_id": "TC-AI-034-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": [
+        "explicit_user_confirmation",
+        "strong_identity_check",
+        "no_automatic_payment"
+      ]
+    },
+    {
+      "id": "AI-036",
+      "feature": "Draft-only Odoo vendor bill",
+      "package_id": "BP-07",
+      "wave": 3,
+      "priority": "P1",
+      "internal_dependencies": [
+        {
+          "id": "AI-016",
+          "relationship": "functional_predecessor"
+        }
+      ],
+      "external_prerequisites": [
+        {
+          "description": "Odoo company/database, supported API entitlements and service credentials",
+          "evidence_state": "proposed",
+          "confirmed_blocked": false
+        }
+      ],
+      "sdlc_stage": "backlog_not_implemented",
+      "hld_ref": "HLD-BP-07",
+      "lld_ref": "LLD-AI-036",
+      "qa_case_id": "TC-AI-036-01",
+      "qa_status": "not_run",
+      "uat_status": "pending",
+      "safety_controls": [
+        "draft_only",
+        "no_automatic_post",
+        "no_automatic_validate",
+        "no_automatic_approve",
+        "no_automatic_pay",
+        "deduplicate",
+        "audit_source"
+      ]
+    }
+  ]
+}
