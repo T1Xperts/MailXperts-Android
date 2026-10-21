@@ -108,7 +108,8 @@ def validate():
           "Drafting must not send automatically")
     fields = {"WBS_Package", "Execution_Wave", "Internal_Dependencies",
               "External_Prerequisite_Readiness", "Design_Approval_Status",
-              "Automated_QA_Execution_Status", "UAT_Gate_Status", "Production_Release_Gate"}
+              "Automated_QA_Execution_Status", "UAT_Gate_Status", "Production_Release_Gate",
+              "QA_Plan_Case_IDs", "QA_Plan_Definition_Link"}
     check("Extended RTM fields present", all(fields.issubset(row) for row in rtm_rows),
           "Extended RTM columns missing")
     check("RTM matches dependency/WBS manifest",
@@ -136,6 +137,12 @@ def validate():
               "automated_negative_security_regression": 38,
               "device_or_provider_UAT": 38},
           "Missing functional, negative/security or UAT test case")
+    check("Every unfinished requirement links all three planned QA cases",
+          all(by_rtm.get(r["id"], {}).get("QA_Plan_Case_IDs", "") ==
+              "; ".join(f"TC-{r['id']}-{n:02d}" for n in range(1, 4))
+              and by_rtm.get(r["id"], {}).get("QA_Plan_Definition_Link", "")
+              for r in reqs),
+          "Test plan links or the 3 QA-case IDs do not match the manifest")
     check("No unfinished feature falsely marked as production released",
           all("RELEASED" not in by_rtm.get(r["id"], {}).get("Production_Release_Gate", "").upper()
               or by_rtm.get(r["id"], {}).get("Production_Release_Gate") == "NOT_RELEASED"
