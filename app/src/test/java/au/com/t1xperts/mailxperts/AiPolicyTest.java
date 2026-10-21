@@ -25,6 +25,13 @@ public class AiPolicyTest {
         reject("http://ai.t1xperts.example");
         reject("https://user:secret@ai.t1xperts.example");
         reject("not-a-url");
+        reject("https://ai.t1xperts.example?token=sensitive");
+        reject("https://ai.t1xperts.example/#fragment");
+        reject("https://ai.t1xperts.example/../internal");
+        reject("https://ai.t1xperts.example/%2e%2e/internal");
+        reject("https://ai.t1xperts.example/%2fprivate");
+        assertEquals("https://ai.t1xperts.example/api",
+                AiPolicy.normaliseGateway("  https://ai.t1xperts.example/api///  "));
     }
 
     @Test public void payloadClampIsDeterministic() {
