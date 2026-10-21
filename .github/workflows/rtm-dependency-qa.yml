@@ -1,0 +1,38 @@
+name: MailXperts RTM Dependency Contract QA
+
+"on":
+  pull_request:
+    paths:
+      - 'docs/traceability/**'
+      - 'docs/architecture/MAILXPERTS_WAVES_HLD_LLD.md'
+      - 'scripts/qa-traceability.py'
+      - '.github/workflows/rtm-dependency-qa.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/traceability/**'
+      - 'docs/architecture/MAILXPERTS_WAVES_HLD_LLD.md'
+      - 'scripts/qa-traceability.py'
+      - '.github/workflows/rtm-dependency-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-rtm:
+    name: Validate 66-row RTM and 38-story dependency DAG
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify dependency, safety and traceability contracts
+        run: python3 scripts/qa-traceability.py
+      - name: Upload deterministic QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mailxperts-rtm-contract-qa-${{ github.run_id }}
+          path: build/traceability/QA-RESULTS.json
+          if-no-files-found: warn
+          retention-days: 90
