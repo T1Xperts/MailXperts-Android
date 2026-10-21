@@ -58,3 +58,13 @@ test("mail gateway bearer comparison rejects missing, short and wrong credential
   assert.equal(verifyMailBearer("Bearer wrong", token), false);
   assert.equal(verifyMailBearer("Bearer 123456789012345", "123456789012345"), false);
 });
+
+
+test("mail AI fails closed when its server model is not configured", () => {
+  assert.throws(() => new MailAssistant({
+    apiKey: "server-test-only", model: "", fetchImpl: async () => ({ ok: true })
+  }), /MAIL_AI_MODEL/);
+  assert.throws(() => new MailAssistant({
+    apiKey: "server-test-only", model: "bad model whitespace", fetchImpl: async () => ({ ok: true })
+  }), /MAIL_AI_MODEL/);
+});
