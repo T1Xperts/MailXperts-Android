@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.0.0",
-  "snapshot": "2026-10-21",
+  "schema_version": "1.1.0",
+  "snapshot": "2026-10-23",
   "source_rtm": "docs/traceability/RTM.csv",
   "authoritative_issues": [
     3,
@@ -172,11 +172,11 @@
       "priority": "P1",
       "internal_dependencies": [],
       "external_prerequisites": [],
-      "sdlc_stage": "backlog_not_implemented",
+      "sdlc_stage": "partial_privacy_opt_in_code_QA_pass_no_device_UAT_or_local_AI",
       "hld_ref": "HLD-BP-09",
       "lld_ref": "LLD-AI-035",
       "qa_case_id": "TC-AI-035-01",
-      "qa_status": "not_run",
+      "qa_status": "three_new_static_security_contract_tests_PASS_device_UAT_pending",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -199,11 +199,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-001",
       "qa_case_id": "TC-AI-001-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -226,11 +226,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-002",
       "qa_case_id": "TC-AI-002-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": [
         "no_automatic_send"
@@ -255,11 +255,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-003",
       "qa_case_id": "TC-AI-003-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -282,11 +282,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-004",
       "qa_case_id": "TC-AI-004-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -309,11 +309,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-005",
       "qa_case_id": "TC-AI-005-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -336,11 +336,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-006",
       "qa_case_id": "TC-AI-006-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -363,11 +363,11 @@
           "confirmed_blocked": true
         }
       ],
-      "sdlc_stage": "code_complete_automated_QA_pass_device_UAT_pending",
+      "sdlc_stage": "code_complete_candidate_beta10_CI_PASS_live_gateway_and_device_UAT_pending",
       "hld_ref": "HLD-BP-01",
       "lld_ref": "LLD-AI-007",
       "qa_case_id": "TC-AI-007-01",
-      "qa_status": "automated_pass_live_UAT_pending",
+      "qa_status": "Android_P0_Node_security_112_JUnit_PASS_no_device_UAT",
       "uat_status": "pending",
       "safety_controls": []
     },
@@ -375,7 +375,7 @@
       "id": "AI-008",
       "feature": "One-tap suggested replies",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -396,7 +396,7 @@
       "id": "AI-014",
       "feature": "Tone and clarity coaching",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -417,7 +417,7 @@
       "id": "AI-015",
       "feature": "Permissioned personal writing style",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -442,7 +442,7 @@
       "id": "AI-024",
       "feature": "Translation and multilingual replies",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -463,7 +463,7 @@
       "id": "AI-029",
       "feature": "AI subject line suggestions",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -484,7 +484,7 @@
       "id": "AI-030",
       "feature": "Organisation templates",
       "package_id": "BP-02",
-      "wave": 2,
+      "wave": 4,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -530,7 +530,7 @@
       "id": "AI-010",
       "feature": "Daily priority inbox briefing",
       "package_id": "BP-03",
-      "wave": 2,
+      "wave": 3,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -601,7 +601,7 @@
       "id": "AI-031",
       "feature": "Voice inbox briefing",
       "package_id": "BP-03",
-      "wave": 2,
+      "wave": 5,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -664,7 +664,7 @@
       "id": "AI-032",
       "feature": "Customer/project timeline",
       "package_id": "BP-05",
-      "wave": 2,
+      "wave": 3,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -685,7 +685,7 @@
       "id": "AI-033",
       "feature": "Business mailbox communication analytics",
       "package_id": "BP-05",
-      "wave": 2,
+      "wave": 0,
       "priority": "P2",
       "internal_dependencies": [],
       "external_prerequisites": [],
@@ -701,7 +701,7 @@
       "id": "AI-022",
       "feature": "Smart AI mail classification",
       "package_id": "BP-06",
-      "wave": 2,
+      "wave": 0,
       "priority": "P1",
       "internal_dependencies": [],
       "external_prerequisites": [],
@@ -738,7 +738,7 @@
       "id": "AI-028",
       "feature": "Confirmed unsubscribe/block recommendations",
       "package_id": "BP-06",
-      "wave": 2,
+      "wave": 3,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -759,7 +759,7 @@
       "id": "AI-011",
       "feature": "Cross-account AI Q&A",
       "package_id": "BP-08",
-      "wave": 2,
+      "wave": 5,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -784,7 +784,7 @@
       "id": "AI-025",
       "feature": "ChatGPT ↔ MailXperts integration",
       "package_id": "BP-08",
-      "wave": 2,
+      "wave": 5,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -815,7 +815,7 @@
       "id": "AI-017",
       "feature": "Email-to-task creation",
       "package_id": "BP-04",
-      "wave": 3,
+      "wave": 2,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -836,7 +836,7 @@
       "id": "AI-018",
       "feature": "Email-to-calendar event",
       "package_id": "BP-04",
-      "wave": 3,
+      "wave": 2,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -857,7 +857,7 @@
       "id": "AI-019",
       "feature": "AI-assisted scheduling",
       "package_id": "BP-04",
-      "wave": 3,
+      "wave": 5,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -884,7 +884,7 @@
       "id": "AI-020",
       "feature": "Mailbox rule creation in plain English",
       "package_id": "BP-04",
-      "wave": 3,
+      "wave": 2,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -905,7 +905,7 @@
       "id": "AI-026",
       "feature": "Natural-language automation",
       "package_id": "BP-04",
-      "wave": 3,
+      "wave": 5,
       "priority": "P1",
       "internal_dependencies": [
         {
@@ -961,7 +961,7 @@
       "id": "AI-034",
       "feature": "Explicit BillPay initiation",
       "package_id": "BP-07",
-      "wave": 3,
+      "wave": 6,
       "priority": "P2",
       "internal_dependencies": [
         {
@@ -1023,5 +1023,44 @@
         "audit_source"
       ]
     }
-  ]
+  ],
+  "wave_model": "seven_dependency_optimised_waves",
+  "waves": [
+    {
+      "wave": 0,
+      "name": "Platform readiness and independent foundations",
+      "count": 5
+    },
+    {
+      "wave": 1,
+      "name": "AI P0 MVP / QA candidate",
+      "count": 7
+    },
+    {
+      "wave": 2,
+      "name": "Reusable internal feature foundations",
+      "count": 9
+    },
+    {
+      "wave": 3,
+      "name": "Invoice-to-Odoo draft and downstream capabilities",
+      "count": 5
+    },
+    {
+      "wave": 4,
+      "name": "Composition and personalisation",
+      "count": 6
+    },
+    {
+      "wave": 5,
+      "name": "Connected workflow integrations",
+      "count": 5
+    },
+    {
+      "wave": 6,
+      "name": "Regulated BillPay",
+      "count": 1
+    }
+  ],
+  "audit_note": "Wave 0 includes AI-022 and AI-033 as independent foundations. Neither is built or QA/UAT-complete. Wave 1 is AI-001..007 (candidate beta.10); both waves have outstanding formal UAT and external service gates."
 }
