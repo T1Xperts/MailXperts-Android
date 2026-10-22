@@ -1,6 +1,6 @@
 # MailXperts SDLC Wave Architecture: HLD + LLD Baseline
 
-**Revision:** 2026-10-21 / draft engineering baseline. **Scope:** 38 unfinished requirements, 10 packages, Waves 0–3. **Status:** DRAFT FOR TECHNICAL REVIEW, not approved architecture; future feature code, QA and UAT are not represented as complete.
+**Revision:** 2026-10-23 / revised draft engineering baseline. **Scope:** 38 unfinished requirements, 10 packages, optimised Waves 0–6. **Status:** DRAFT FOR TECHNICAL REVIEW, not approved architecture; future feature code, QA and UAT are not represented as complete.
 
 ## Source of truth and evidence
 
@@ -13,21 +13,21 @@
 
 ```mermaid
 flowchart TD
-  OAuth["BP-10: OAuth Device UAT (Wave 0)"] 
-  Privacy["BP-09: Consent / Privacy (Wave 0)"]
-  Gateway["BP-01: Server AI Foundation (Wave 0)"]
-  MVP["BP-01: AI-001..007 (Wave 1)"]
-  Gateway --> MVP
-  Privacy --> MVP
-  MVP --> Compose["BP-02: Compose AI (Wave 2)"]
-  MVP --> Attention["BP-03: Attention (Wave 2)"]
-  MVP --> Documents["BP-05: Document AI (Wave 2)"]
-  MVP --> Cross["BP-08: Cross-account AI (Wave 2)"]
-  Classification["BP-06: Classification (Wave 2)"]
-  MVP --> Classification
-  Attention --> Workflow["BP-04: Workflows (Wave 3)"]
-  Documents --> Financial["BP-07: Invoice / Odoo / BillPay (Wave 3)"]
-  Cross --> Workflow
+    P["Wave 0 | 5 foundations: OAuth, platform, consent, classification, analytics"]
+    M["Wave 1 | 7 user-facing AI MVP stories"]
+    F["Wave 2 | 9 reusable internal feature foundations"]
+    D["Wave 3 | 5 dependent features incl. Odoo draft"]
+    C["Wave 4 | 6 intelligent composition stories"]
+    I["Wave 5 | 5 third-party integrations and automations"]
+    B["Wave 6 | 1 regulated payment feature"]
+    P --> M
+    M --> F
+    F --> D
+    M --> C
+    M --> I
+    F --> I
+    D --> B
+    C -. Independent once privacy and AI composer interfaces ready .-> I
 ```
 
 **Policy:** A dependency edge is an implementation sequencing relationship, not automatically proof that the upstream feature is approved or fully completed. Only the relevant read-only provider/gateway foundation of MX-QA-029 is a prerequisite for the AI MVP. Full Build Expert coding-agent capability is separately gated.
@@ -85,7 +85,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-02: Intelligent composition
 
-**Allocation:** 6 requirements: AI-008, AI-014, AI-015, AI-024, AI-029, AI-030. **Waves:** Wave 2.
+**Allocation:** 6 requirements: AI-008, AI-014, AI-015, AI-024, AI-029, AI-030. **Waves:** Wave 4.
 
 **HLD-BP-02:** Composition intelligence is layered above existing per-account composer and signature/recipient ownership. AI returns suggestions, not SMTP operations. Consent-controlled writing-style preference is segregated per account.
 
@@ -106,7 +106,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-03: Attention, briefing and voice
 
-**Allocation:** 5 requirements: AI-009, AI-010, AI-021, AI-027, AI-031. **Waves:** Wave 2.
+**Allocation:** 5 requirements: AI-009, AI-010, AI-021, AI-027, AI-031. **Waves:** Wave 2, Wave 3, Wave 5.
 
 **HLD-BP-03:** Attention pipeline derives deadline/action state and priority explanations from authorised message context and local sync metadata. Notifications and spoken results subscribe to a read-only materialised briefing snapshot.
 
@@ -126,7 +126,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-04: Tasks, calendar and workflow automation
 
-**Allocation:** 5 requirements: AI-017, AI-018, AI-019, AI-020, AI-026. **Waves:** Wave 3.
+**Allocation:** 5 requirements: AI-017, AI-018, AI-019, AI-020, AI-026. **Waves:** Wave 2, Wave 5.
 
 **HLD-BP-04:** Mailbox action engine separates inferred intent, preview, user approval, execution and audit. Calendars, reminders and automations use permissioned connectors with durable scheduling when configured.
 
@@ -146,7 +146,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-05: Attachment, context and analytics
 
-**Allocation:** 4 requirements: AI-012, AI-013, AI-032, AI-033. **Waves:** Wave 2.
+**Allocation:** 4 requirements: AI-012, AI-013, AI-032, AI-033. **Waves:** Wave 0, Wave 2, Wave 3.
 
 **HLD-BP-05:** Read-only document and conversation intelligence uses safe MIME/attachment extraction and permission-scoped context assembly. Analytics are aggregates separated by account/tenant.
 
@@ -165,7 +165,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-06: Classification and noise controls
 
-**Allocation:** 3 requirements: AI-022, AI-023, AI-028. **Waves:** Wave 2.
+**Allocation:** 3 requirements: AI-022, AI-023, AI-028. **Waves:** Wave 0, Wave 2, Wave 3.
 
 **HLD-BP-06:** A reversible mail classification layer proposes categories and human-correctable noise rules. Account/folder isolation and local overrides supersede model inference.
 
@@ -183,7 +183,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-07: Invoice, Odoo and payments
 
-**Allocation:** 3 requirements: AI-016, AI-034, AI-036. **Waves:** Wave 3.
+**Allocation:** 3 requirements: AI-016, AI-034, AI-036. **Waves:** Wave 3, Wave 6.
 
 **HLD-BP-07:** Finance isolation: invoice detection/extraction is read-only; accounting integration creates draft-only Odoo vendor bills; any payment initiation is a distinct user-confirmed workflow. All external financial writes pass consent, company selection, duplicate checking and an append-only audit.
 
@@ -201,7 +201,7 @@ Design proposed → engineering review → design approved → code branch → u
 
 ### BP-08: Cross-account AI and ChatGPT
 
-**Allocation:** 2 requirements: AI-011, AI-025. **Waves:** Wave 2.
+**Allocation:** 2 requirements: AI-011, AI-025. **Waves:** Wave 5.
 
 **HLD-BP-08:** Permission-scoped cross-account query service builds a secure source-index view. ChatGPT integration is a narrow connector with revocable OAuth/service identity and separate read/write scopes.
 
@@ -255,11 +255,16 @@ Every `TC-<requirement>-01` in the existing catalogue is a **proposed scenario**
 
 The `scripts/qa-traceability.py` contract suite verifies dependency completeness, wave DAG, WBS alignment, 66-RTM ID coverage and safety invariants. This is **static governance QA only**. It cannot validate product features, Android builds or UAT. Android/Node runtime testing stays with the existing CI plus package-specific automated suites.
 
-## Immediate engineering tasks
+## Immediate engineering tasks, revised seven-wave sequence
 
-- **Wave 0:** establish dependency contracts, HLD/LLD draft, ownership/security gate; validate OAuth on real device; provision/approve HTTPS AI gateway and consent/privacy policy.
-- **Wave 1:** reconcile AI-001..007 draft PR #30; harden URL boundary/response handling, execute Android + server Node tests in CI, verify live gateway, device UAT, human review.
-- **Wave 2:** run five independent package tracks after interface baselines, each with own PR/CI and explicit source-account/data permissions.
-- **Wave 3:** deploy task/calendar/automation and finance integration only after internal prerequisites and externally owned API readiness; Odoo remains draft-only; BillPay requires separate strong approvals.
+- **Wave 0 (5):** MX-QA-029 secure foundation, MX-QA-030 OAuth device retest, AI-035 consent/on-device alternatives, AI-022 classification and AI-033 analytics. **Current status:** platform partial, OAuth code complete/UAT pending, consent partial, classification and analytics not built.
+- **Wave 1 (7):** AI-001..007 AI MVP code complete in draft PR #30 with privacy/security hardening PR #33, beta.10 VC24 candidate signed offline for internal QA. Android/P0/Node CI pass; hosted HTTPS AI gateway and physical-device UAT pending.
+- **Wave 2 (9):** AI-009, 012, 013, 017, 018, 020, 021, 023, 027. Dependency-matched foundations.
+- **Wave 3 (5):** AI-016 then AI-036 draft-only Odoo bill, plus AI-010, 028 and 032. Odoo external acceptance remains separate.
+- **Wave 4 (6):** AI-008, 014, 015, 024, 029, 030. These may run in parallel after their individual P0/privacy interfaces are ready.
+- **Wave 5 (5):** AI-011 before AI-025, AI-019, 026, 031; calendar/provider/connector/hosting integrations gated by credentials and real UAT.
+- **Wave 6 (1):** AI-034 BillPay pilot behind regulated provider readiness, strong identity, human confirmation and full audit.
+
+Dependency edges mean ordered design/code integration, not a claim that earlier waves are fully approved; independently ready work may run in parallel. Under no circumstances should a successful CI build be recorded as a completed user/device UAT.
 
 **No source code or service credential is approved for production solely by the existence of this HLD/LLD document.**
