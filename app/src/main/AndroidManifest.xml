@@ -28,6 +28,7 @@
         </provider>
         <activity android:name=".AppearanceActivity" android:exported="false" />
         <activity android:name=".SmartContactsActivity" android:exported="false" />
+        <activity android:name=".CloudContactsActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
         <activity android:name=".SignatureEditorActivity" android:exported="false" />
