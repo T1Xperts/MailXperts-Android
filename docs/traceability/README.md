@@ -1,6 +1,7 @@
 # MailXperts Requirements Traceability Matrix (RTM)
 
-> **Current status checked 22 October 2026:** [Four-wave HLD/LLD, feature build, QA, UAT and release dashboard](WAVE_STATUS_2026-10-22.md). The [44-column RTM](RTM.csv) reflects **all 66 requirements**, with individual stage status for 38 unfinished items. Waves 2 and 3 have **28 unbuilt features**, plus AI-035 in Wave 0 (29 total); seven AI MVP features have draft code and aggregate CI PASS but live UAT remains pending. All ten package HLD/LLD outlines are drafts, not approved design. Full four-wave Alpha release remains **NO-GO**.
+> **Latest checked, 23 October 2026:** [Wave 0/1 beta.10 build, QA and open UAT report](WAVE0_WAVE1_BUILD_QA_2026-10-23.md). [44-column RTM](RTM.csv) now uses the optimised **seven-wave sequence** ([WBS on PR #32](https://github.com/T1Xperts/MailXperts-Android/pull/32)), covering 38 unfinished stories. Wave 0 = 5 features (MX-QA-029 partial, MX-QA-030 code complete/UAT pending, AI-035 partial Cloud AI consent, AI-022/AI-033 unbuilt); Wave 1 = 7 code-complete AI features, beta.10 signed internal QA APK. **Neither wave has passed full live-device UAT or been production released.**
+
 
 
 > **Execution update, 21 October 2026:** Wave 0 engineering preparation has STARTED on [branch `feature/mailxperts-wave0-sdlc-rtm-20261021`](https://github.com/T1Xperts/MailXperts-Android/tree/feature/mailxperts-wave0-sdlc-rtm-20261021). The [44-column RTM](RTM.csv) links the 38 incomplete stories to WBS packages, internal dependency IDs, external readiness, design approval, automated QA evidence, UAT and production release gates. See [machine-readable dependency graph](WORK_BREAKDOWN_DEPENDENCIES.json) and [Wave 0–3 HLD/LLD draft](../architecture/MAILXPERTS_WAVES_HLD_LLD.md). The [114-case proposed QA plan](QA_CASES_WAVES.json) is linked from the RTM but remains **NOT RUN** until individual executable test evidence is available. The [static QA validator](../../scripts/qa-traceability.py) validates traceability and safety contracts, not product feature correctness. **Designs are DRAFT/PENDING APPROVAL; unfinished feature execution remains NOT RUN unless existing CI is explicitly linked. No unimplemented feature has passed QA/UAT or been released.**
@@ -28,7 +29,8 @@
 | MX-QA-029 | 1 | Secure read-only Build Expert foundation on **draft PR #27**; remaining phases pending |
 | MX-QA-030 | 1 | OAuth2/XOAUTH2 code and automated contracts available; **Gmail device/provider UAT pending** |
 | AI-001 through AI-007 | 7 | **Code complete / automated QA PASS in draft PR #30**; HTTPS gateway/device UAT pending |
-| AI-008 through AI-036 | 29 | Backlog, not implemented or QA run |
+| AI-035 | 1 | Partial opt-in/revoke implementation, 3 JUnit source-contract tests PASS, live privacy UAT pending |
+| AI-008 through AI-034 and AI-036 | 28 | Not implemented / not QA run |
 | **Total** | **66** | **No assertion of production release without release proof** |
 
 **Important stale-field reconciliation:** The summary table in AI epic [#29](https://github.com/T1Xperts/MailXperts-Android/issues/29) still prints `Backlog` for all 36 AI rows; a newer [implementation comment](https://github.com/T1Xperts/MailXperts-Android/issues/29#issuecomment-6168023090) and [draft PR #30](https://github.com/T1Xperts/MailXperts-Android/pull/30) explicitly establish AI-001–AI-007 as code-complete with automated CI passed. This RTM preserves both original-register and independently reconciled statuses. The combined master issue #3 has not been overwritten merely to manufacture SDLC movement.
