@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -421,6 +422,11 @@ public class AiAssistantActivity extends Activity {
     }
 
     private boolean ensureAi() {
+        if (!preferences.cloudAiAllowed()) {
+            setStatus("Cloud AI is off. Enable it only after reviewing the privacy notice.", true);
+            configureGateway();
+            return false;
+        }
         if (ai.configured()) return true;
         setStatus("Configure the MailXperts AI gateway first.", true);
         configureGateway();
@@ -435,6 +441,11 @@ public class AiAssistantActivity extends Activity {
                 ? "Gateway access token" : "Gateway token saved • leave blank to keep it");
         token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         form.addView(Ui.text(this, "The OpenAI API key stays on your server. This app stores only the MailXperts gateway token in Android Keystore."));
+        form.addView(Ui.text(this, "PRIVACY NOTICE: When Cloud AI is on, the subject, sender, message body and other selected mailbox context can be transmitted to your configured MailXperts AI gateway and its external AI model provider. Cloud AI is not processed on-device. You can turn it off at any time."));
+        CheckBox cloudConsent = new CheckBox(this);
+        cloudConsent.setText("I agree to send selected mailbox content to the configured Cloud AI service");
+        cloudConsent.setChecked(preferences.cloudAiAllowed());
+        form.addView(cloudConsent);
         form.addView(endpoint);
         form.addView(token);
         new AlertDialog.Builder(this)
@@ -445,6 +456,7 @@ public class AiAssistantActivity extends Activity {
                         preferences.setGateway(endpoint.getText().toString());
                         String supplied = token.getText().toString().trim();
                         if (!supplied.isEmpty()) vault.saveToken(supplied);
+                        preferences.setCloudAiAllowed(cloudConsent.isChecked());
                         refreshGatewayStatus();
                         Toast.makeText(this, "AI gateway saved", Toast.LENGTH_SHORT).show();
                     } catch (Exception error) {
@@ -462,10 +474,13 @@ public class AiAssistantActivity extends Activity {
 
     private void refreshGatewayStatus() {
         String endpoint = preferences.gateway();
-        status.setText(ai.configured()
-                ? "AI gateway connected • " + endpoint
-                : "AI gateway not configured • OpenAI credentials are never stored in the APK");
-        status.setTextColor(ai.configured() ? Ui.teal(this) : Ui.muted(this));
+        status.setText(!preferences.cloudAiAllowed()
+                ? "Cloud AI disabled • No selected email content is sent to the AI gateway"
+                : ai.configured()
+                    ? "Cloud AI enabled; gateway configured • " + endpoint
+                    : "Cloud AI enabled but gateway not configured");
+        status.setTextColor(preferences.cloudAiAllowed() && ai.configured()
+                ? Ui.teal(this) : Ui.muted(this));
     }
 
     private void setStatus(String message, boolean error) {

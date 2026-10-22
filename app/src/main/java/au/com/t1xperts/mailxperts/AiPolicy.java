@@ -18,7 +18,7 @@ final class AiPolicy {
 
     static String normaliseGateway(String raw) {
         String value = raw == null ? "" : raw.trim();
-        if (value.endsWith("/")) value = value.substring(0, value.length() - 1);
+        while (value.endsWith("/")) value = value.substring(0, value.length() - 1);
         URI uri;
         try {
             uri = URI.create(value);
@@ -31,6 +31,20 @@ final class AiPolicy {
         }
         if (uri.getUserInfo() != null) {
             throw new IllegalArgumentException("Do not put credentials in the gateway URL.");
+        }
+        // A gateway is an HTTPS origin or safe path-prefix, never a query or fragment.
+        // Without this rule, appending /v1/mail/tasks may target the wrong endpoint.
+        if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
+            throw new IllegalArgumentException("Remove query parameters and fragments from the gateway URL.");
+        }
+        String path = uri.getRawPath();
+        if (path != null) {
+            String lowered = path.toLowerCase(java.util.Locale.ROOT);
+            if (lowered.contains("..") || lowered.contains("%2e")
+                    || lowered.contains("%2f") || lowered.contains("%5c")
+                    || path.contains("\\\\") || path.contains("//")) {
+                throw new IllegalArgumentException("The gateway path must not contain traversal or encoded separators.");
+            }
         }
         return value;
     }

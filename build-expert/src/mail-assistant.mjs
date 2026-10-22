@@ -9,12 +9,17 @@ const ALLOWED_TASKS = new Set([
 export class MailAssistant {
   constructor({
     apiKey = process.env.OPENAI_API_KEY,
-    model = process.env.MAIL_AI_MODEL || "gpt-6-luna",
+    model = process.env.MAIL_AI_MODEL || process.env.OPENAI_MODEL || "",
     timeoutMs = Number(process.env.MAIL_AI_TIMEOUT_MS || 75000),
     maxOutputTokens = Number(process.env.MAIL_AI_MAX_OUTPUT_TOKENS || 1800),
     fetchImpl = globalThis.fetch
   } = {}) {
     if (!apiKey) throw new Error("OPENAI_API_KEY is required on the MailXperts AI server");
+    // A verified, deployment-authorised model must be configured server-side.
+    // Do not ship a speculative model ID as the production default.
+    if (typeof model !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/.test(model)) {
+      throw new Error("MAIL_AI_MODEL (or OPENAI_MODEL) must identify an approved available server model");
+    }
     if (typeof fetchImpl !== "function") throw new Error("fetch is unavailable");
     this.apiKey = apiKey;
     this.model = model;

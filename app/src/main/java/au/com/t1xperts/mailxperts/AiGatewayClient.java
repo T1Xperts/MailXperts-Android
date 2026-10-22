@@ -44,6 +44,11 @@ final class AiGatewayClient {
 
     Result execute(String task, JSONObject payload) throws Exception {
         if (!AiPolicy.isAllowedTask(task)) throw new IllegalArgumentException("Unsupported AI task.");
+        // Block remote transfer before accessing any message context or credentials
+        // when the user has not explicitly opted in (or has revoked consent).
+        if (!preferences.cloudAiAllowed()) {
+            throw new IllegalStateException("Enable Cloud AI in gateway settings before sending mail content.");
+        }
         String endpoint = AiPolicy.normaliseGateway(preferences.gateway());
         String token = vault.token();
         if (token.isEmpty()) throw new IllegalStateException("MailXperts AI is not configured.");

@@ -35,6 +35,7 @@ Those actions are explicitly denied by `src/policy.mjs`.
 Set these on the trusted server/runner only:
 
 - `OPENAI_API_KEY` — required for the OpenAI adapter.
+- `MAIL_AI_MODEL` (or `OPENAI_MODEL`) — **required for /v1/mail/tasks**. Configure an available provider model on the server; no speculative model identifier is bundled as a default. Missing configuration fails closed. This requirement is independent of device settings.
 - `OPENAI_MODEL` — optional, defaults to `gpt-6.1-sol`.
 - `OPENAI_TIMEOUT_MS` — optional request timeout, capped at 180 seconds.
 - `OPENAI_MAX_OUTPUT_TOKENS` — optional per-task response budget, capped at 12,000 tokens.
