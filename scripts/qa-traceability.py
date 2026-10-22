@@ -59,8 +59,8 @@ def validate():
               all(by_id[x]["package_id"] == p["id"] for x in p["requirements"])
               for p in pkgs),
           "Package membership/size mismatch")
-    check("All four waves accounted for",
-          Counter(r["wave"] for r in reqs) == {0: 3, 1: 7, 2: 20, 3: 8},
+    check("All seven waves accounted for",
+          Counter(r["wave"] for r in reqs) == {0: 5, 1: 7, 2: 9, 3: 5, 4: 6, 5: 5, 6: 1},
           "Wrong wave sizes or missing wave")
     check("Dependencies internal and ordered",
           all(d["id"] in by_id and d["id"] != r["id"] and
