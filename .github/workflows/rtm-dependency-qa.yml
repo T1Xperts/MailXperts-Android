@@ -8,7 +8,7 @@ name: MailXperts RTM Dependency Contract QA
       - 'scripts/qa-traceability.py'
       - '.github/workflows/rtm-dependency-qa.yml'
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/mailxperts-wave0-**' ]
     paths:
       - 'docs/traceability/**'
       - 'docs/architecture/MAILXPERTS_WAVES_HLD_LLD.md'
