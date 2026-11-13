@@ -66,9 +66,9 @@
 ## 5. Requirements reprioritisation and RTM policy
 
 - Promote AI-025 (external AI bridge) and AI-035 (privacy/consent) from P1 to P0 in planning RTM, without changing code/UAT statuses.
-- Advance the essential MXAI cross-platform and mobile stories to P0 planning priority: MXAI-032, 046, 047, 049, 051, 052, 053, 072, 075, 076. W2 absorbs accelerated assistant parity and mobile UI. Existing P0 foundations remain P0.
+- Advance essential MXAI cross-platform and mobile stories to P0 planning priority: **MXAI-047, 049, 051, 052, 053, 072, 075 and 076**. Six W3 integration items move to W2 for read-only assistant parity, privacy and Android AI access. **MXAI-046** (Microsoft 365 declarative-agent packaging) and **MXAI-032** (attachment processing) remain P1 because they are not beta-critical; essential read-only consent/redaction stays within P0 gateway and AI security controls. Existing P0 foundations remain P0.
 - Add six **proposed** iOS requirements MXAI-089..094. They are wholly new, not delivered, and do not overwrite the historical 88-item 8 Nov planning snapshot.
-- The 44-column RTM must retain each original accepted record and each unmerged candidate status, plus links to this plan/HLD/LLD/QA. Existing 154 IDs + six planned iOS IDs = 160 IDs; **the count is not distinct completed features**.
+- The 44-column RTM must retain each original accepted record and each unmerged candidate status, plus links to this plan/HLD/LLD/QA. Existing 154 IDs + six planned iOS IDs = **160 IDs**, while the detailed plugin backlog is **94 proposed items** (88 historic + six iOS), **683 provisional story points** (633 historic + 50 new). Revised MXAI wave distribution: W0=11, W1=22, W2=29, W3=18, W4=12, W5=2. **These counts are not distinct completed features or a release claim**.
 - Preserve the existing MXAI wave IDs W0-W5 as a provenance grouping; introduce a near-P0 **execution lane** in this document, not a disruptive renumbering of historic waves.
 - Every requirement flows: backlog -> HLD/LLD -> branch/PR -> CI artifact -> per-case test -> security evidence -> manual UAT -> beta release decision. Documentation PRs cannot satisfy build/test/release gates.
 
