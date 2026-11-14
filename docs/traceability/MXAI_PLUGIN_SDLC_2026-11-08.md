@@ -1,5 +1,7 @@
 # MailXperts universal AI assistants — combined product backlog and SDLC extension
 
+> **13 Nov 2026 planning addendum (draft; not released):** The near-P0 universal AI SDLC proposal supersedes this document **for prospective priorities and wave allocation only**. Current draft RTM = **160 IDs/44 columns** and detailed MXAI backlog = **94 proposed items / 683 provisional points** including six planned iOS companion requirements. The original 8 Nov figures of 88 proposed MXAI items, 633 points and 154 total IDs remain historical snapshots, not current planning totals. See [Near-P0 SDLC plan](MAILXPERTS_NEAR_P0_SDLC_PLAN_2026-11-13.md), [proposed HLD/LLD](../architecture/MAILXPERTS_UNIVERSAL_AI_HLD_LLD_2026-11-13.md) and [automated QA + beta UAT plan](../qa/MAILXPERTS_UNIVERSAL_AI_BETA_QA_2026-11-13.md). All new scope remains proposed, unbuilt, untested and unreleased; previous accepted MX-QA evidence is unchanged.
+
 **As of:** 8 November 2026 (Australia/Melbourne) · **Initiative:** MX-AI-001 · **New requirements:** MXAI-001…MXAI-088 · **Repository:** T1Xperts/MailXperts-Android
 
 ## Authoritative baseline and provenance
