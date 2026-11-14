@@ -1,0 +1,20 @@
+name: MailXperts P0-P1 production plan validation
+on:
+  pull_request:
+    paths:
+      - 'docs/release/**'
+      - 'docs/traceability/RTM.csv'
+      - 'docs/traceability/MXAI_PLUGIN_BACKLOG.csv'
+      - 'scripts/validate_p0p1_execution_plan.py'
+      - '.github/workflows/p0p1-plan-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  planning-integrity:
+    name: Validate RTM and 164-task release network (no deployment)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run planning integrity checks
+        run: python3 scripts/validate_p0p1_execution_plan.py
