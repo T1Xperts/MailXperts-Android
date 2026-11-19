@@ -21,6 +21,31 @@ public class ReplyForwardFormatterTest {
         assertTrue(html.contains("<p>Hello <b>Rafi</b></p>"));
     }
 
+    @Test public void replyStripsOutlookWordStyleBlocksWithoutDestroyingBody() {
+        String html = "<!-- Word export --><style>@font-face{font-family:Aptos}"
+                + "p.MsoNormal{margin:0}</style><p class='MsoNormal' "
+                + "style='font-size:12pt'>Hi Rafi</p>";
+        String result = ReplyForwardFormatter.replyChain(
+                "a@example.com", "b@example.com", "", "today", "RE: SMS", html);
+        assertFalse(result.contains("@font-face"));
+        assertFalse(result.contains("p.MsoNormal{"));
+        assertTrue(result.contains("Hi Rafi"));
+        assertTrue(result.contains("font-size:12pt"));
+    }
+
+    @Test public void longOutlookThreadRetainsNestedQuoteInSafeHtml() {
+        StringBuilder html = new StringBuilder("<div>");
+        for (int i = 0; i < 250; i++) {
+            html.append("<blockquote><p>Thread ").append(i).append(" বাংলা ✅</p></blockquote>");
+        }
+        html.append("</div>");
+        String result = ReplyForwardFormatter.replyChain("sender", "recipient", "", "date",
+                "Subject", html.toString());
+        assertTrue(result.contains("Thread 0"));
+        assertTrue(result.contains("Thread 249"));
+        assertTrue(result.contains("বাংলা ✅"));
+    }
+
     @Test public void replyIncludesCcWhenPresent() {
         String html = ReplyForwardFormatter.replyChain(
                 "a@example.com", "b@example.com", "c@example.com",

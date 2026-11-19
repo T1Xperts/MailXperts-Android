@@ -294,52 +294,95 @@ public class MessageActivity extends Activity {
     }
 
     private void reply() {
-        if (loaded == null) return;
-        DiagnosticLogger.breadcrumb(this, "REPLY_TAPPED", "MESSAGE");
-        Intent intent = new Intent(this, ComposeActivity.class);
-        intent.putExtra("account_id", accountId);
-        String replyTo = headerValue("Reply-To");
-        intent.putExtra("to", extract(replyTo.isEmpty() ? loaded.from : replyTo));
-        String subject = loaded.subject == null ? "" : loaded.subject;
-        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
-        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
-                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
-        startActivity(intent);
+        launchReplyComposer("REPLY");
     }
 
     private void replyAll() {
-        if (loaded == null) return;
-        DiagnosticLogger.breadcrumb(this, "REPLY_ALL_TAPPED", "MESSAGE");
-        String replyTarget = headerValue("Reply-To");
-        if (replyTarget.isEmpty()) replyTarget = loaded.from;
-        String toRecipients = uniqueRecipients(replyTarget, loaded.to);
-        String ccRecipients = uniqueRecipients(headerValue("Cc"));
-        ccRecipients = subtractRecipients(ccRecipients, toRecipients);
-        if (toRecipients.isEmpty()) toRecipients = extract(replyTarget);
-        Intent intent = new Intent(this, ComposeActivity.class);
-        intent.putExtra("account_id", accountId);
-        intent.putExtra("to", toRecipients);
-        if (!ccRecipients.isEmpty()) intent.putExtra("cc", ccRecipients);
-        String subject = loaded.subject == null ? "" : loaded.subject;
-        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
-        intent.putExtra("initial_html", ReplyForwardFormatter.replyChain(
-                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
-        startActivity(intent);
+        launchReplyComposer("REPLY_ALL");
     }
 
     private void forward() {
+        launchReplyComposer("FORWARD");
+    }
+
+    /** Avoid large Binder transactions and blocking sanitization on the UI thread. */
+    private void launchReplyComposer(String action) {
         if (loaded == null) return;
-        DiagnosticLogger.breadcrumb(this, "FORWARD_TAPPED", "MESSAGE");
-        Intent intent = new Intent(this, ComposeActivity.class);
+        DiagnosticLogger.breadcrumb(this, action + "_TAPPED", "MESSAGE");
+        final MailRepository.FullMessage original = loaded;
+        final String sender = original.from;
+        final String originalTo = original.to;
+        final String cc = headerValue("Cc");
+        final String replyTo = headerValue("Reply-To");
+        final String subject = original.subject == null ? "" : original.subject;
+        final String date = original.date == null ? "" :
+                DateFormat.getDateTimeInstance().format(original.date);
+        final Intent intent = new Intent(this, ComposeActivity.class);
         intent.putExtra("account_id", accountId);
-        String subject = loaded.subject == null ? "" : loaded.subject;
-        String date = loaded.date == null ? "" : DateFormat.getDateTimeInstance().format(loaded.date);
-        intent.putExtra("subject", ReplyForwardFormatter.forwardSubject(subject));
-        intent.putExtra("initial_html", ReplyForwardFormatter.forwardChain(
-                loaded.from, loaded.to, headerValue("Cc"), date, subject, loaded.html));
-        startActivity(intent);
+        if ("FORWARD".equals(action)) {
+            intent.putExtra("subject", ReplyForwardFormatter.forwardSubject(subject));
+        } else if ("REPLY_ALL".equals(action)) {
+            String target = replyTo.isEmpty() ? sender : replyTo;
+            String to = uniqueRecipients(target, originalTo);
+            String copies = subtractRecipients(uniqueRecipients(cc), to);
+            intent.putExtra("to", to.isEmpty() ? extract(target) : to);
+            if (!copies.isEmpty()) intent.putExtra("cc", copies);
+            intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        } else {
+            intent.putExtra("to", extract(replyTo.isEmpty() ? sender : replyTo));
+            intent.putExtra("subject", ReplyForwardFormatter.replySubject(subject));
+        }
+
+        reply.setEnabled(false);
+        replyAll.setEnabled(false);
+        forward.setEnabled(false);
+        executor.execute(() -> {
+            try {
+                String quoted = "FORWARD".equals(action)
+                        ? ReplyForwardFormatter.forwardChain(
+                                sender, originalTo, cc, date, subject, original.html)
+                        : ReplyForwardFormatter.replyChain(
+                                sender, originalTo, cc, date, subject, original.html);
+                String token = ReplyPayloadStore.save(this, quoted);
+                intent.putExtra(ReplyPayloadStore.EXTRA_TOKEN, token);
+                runOnUiThread(() -> {
+                    restoreReplyButtons();
+                    try {
+                        startActivity(intent);
+                        DiagnosticLogger.breadcrumb(this, "COMPOSER_INTENT_STARTED", "MESSAGE");
+                    } catch (RuntimeException error) {
+                        DiagnosticLogger.nonFatal(this, "COMPOSER_LAUNCH_FAILED", "MESSAGE", error);
+                        Toast.makeText(this, "Cannot open composer. Please retry.", Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (Exception failure) {
+                DiagnosticLogger.nonFatal(this, "QUOTE_PREPARATION_FAILED", "MESSAGE", failure);
+                runOnUiThread(() -> {
+                    restoreReplyButtons();
+                    new AlertDialog.Builder(this)
+                            .setTitle("Cannot quote this message")
+                            .setMessage("The original conversation is too large or unavailable. "
+                                    + "Open a reply without the quoted history? "
+                                    + "The original email will remain unchanged.")
+                            .setNegativeButton("Cancel", null)
+                            .setPositiveButton("Continue", (dialog, which) -> {
+                                try { startActivity(intent); }
+                                catch (RuntimeException error) {
+                                    DiagnosticLogger.nonFatal(this,
+                                            "COMPOSER_LAUNCH_FAILED", "MESSAGE", error);
+                                    Toast.makeText(this, "Unable to open reply.",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            }).show();
+                });
+            }
+        });
+    }
+
+    private void restoreReplyButtons() {
+        reply.setEnabled(true);
+        replyAll.setEnabled(true);
+        forward.setEnabled(true);
     }
 
     private void renderAttachments() {
