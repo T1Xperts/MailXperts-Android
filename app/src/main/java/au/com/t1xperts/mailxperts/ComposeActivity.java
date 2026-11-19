@@ -65,6 +65,12 @@ public class ComposeActivity extends ComponentActivity {
     @Override protected void onCreate(Bundle state) {
         ThemeManager.apply(this);
         super.onCreate(state);
+        DiagnosticLogger.breadcrumb(this, "COMPOSER_CREATED", "COMPOSER");
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!editorReady && !isFinishing() && !isDestroyed() && hasWindowFocus()) {
+                DiagnosticLogger.breadcrumb(this, "COMPOSER_LOAD_TIMEOUT", "COMPOSER");
+            }
+        }, 15000L);
         store = new SecureStore(this);
         local = new LocalStore(this);
         recipientHistory = new RecipientHistory(this);
@@ -133,6 +139,7 @@ public class ComposeActivity extends ComponentActivity {
                 editorReady = true;
                 configureEditor();
                 populate();
+                DiagnosticLogger.breadcrumb(ComposeActivity.this, "COMPOSER_READY", "COMPOSER");
             }
         });
         editor.loadDataWithBaseURL("https://mailxperts.local/",

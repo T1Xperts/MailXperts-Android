@@ -295,6 +295,7 @@ public class MessageActivity extends Activity {
 
     private void reply() {
         if (loaded == null) return;
+        DiagnosticLogger.breadcrumb(this, "REPLY_TAPPED", "MESSAGE");
         Intent intent = new Intent(this, ComposeActivity.class);
         intent.putExtra("account_id", accountId);
         String replyTo = headerValue("Reply-To");
@@ -309,6 +310,7 @@ public class MessageActivity extends Activity {
 
     private void replyAll() {
         if (loaded == null) return;
+        DiagnosticLogger.breadcrumb(this, "REPLY_ALL_TAPPED", "MESSAGE");
         String replyTarget = headerValue("Reply-To");
         if (replyTarget.isEmpty()) replyTarget = loaded.from;
         String toRecipients = uniqueRecipients(replyTarget, loaded.to);
@@ -329,6 +331,7 @@ public class MessageActivity extends Activity {
 
     private void forward() {
         if (loaded == null) return;
+        DiagnosticLogger.breadcrumb(this, "FORWARD_TAPPED", "MESSAGE");
         Intent intent = new Intent(this, ComposeActivity.class);
         intent.putExtra("account_id", accountId);
         String subject = loaded.subject == null ? "" : loaded.subject;

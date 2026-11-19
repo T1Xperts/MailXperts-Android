@@ -70,6 +70,8 @@ final class Navigation {
         }
         add(drawer, panel, activity, accountId, "Appearance",
                 () -> activity.startActivity(new Intent(activity, AppearanceActivity.class)));
+        add(drawer, panel, activity, accountId, "Diagnostics & crash reports",
+                () -> activity.startActivity(new Intent(activity, DiagnosticsActivity.class)));
 
         Button close = Ui.compactButton(activity, "Close");
         close.setOnClickListener(v -> drawer.dismiss());

@@ -27,6 +27,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <activity android:name=".AppearanceActivity" android:exported="false" />
+        <activity android:name=".DiagnosticsActivity" android:exported="false" />
         <activity android:name=".SmartContactsActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".LocalFolderActivity" android:exported="false" />
