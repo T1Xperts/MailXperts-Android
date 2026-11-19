@@ -115,3 +115,10 @@ From v1.2 onward, keep using the v1.2 release keystore and increasing `versionCo
 The source and release workflow produce a signed APK and Android App Bundle. A public store launch still requires the T1Xperts Play Console owner to complete the listing, privacy-policy URL, Data safety declaration, testing track and any account-access instructions.
 
 Gmail app-password setup is available for compatible accounts. Consumer Outlook/Hotmail/MSN/Live password-only setup remains intentionally blocked because Microsoft requires OAuth2. Production one-tap Google or Microsoft sign-in requires T1Xperts-owned OAuth client registrations, redirect URIs and provider verification; no shared or placeholder OAuth credentials are embedded.
+
+
+## Development candidate — MX-QA-032 diagnostics (19 Nov 2026)
+
+On [draft PR #40](https://github.com/T1Xperts/MailXperts-Android/pull/40), not in a released APK, MailXperts adds locally stored sanitized crash/ANR event metadata, a Diagnostics screen with explicit export/delete, and Reply/Reply All composer breadcrumbs. The app does **not** retrieve system-wide logcat or automatically upload incidents. Automatic GitHub issue reporting requires an approved private, authenticated, opt-in backend gateway and is not yet built.
+
+See [product backlog](docs/product/MAILXPERTS_PRODUCT_BACKLOG_2026-11-19.md), [SDLC/RTM](docs/traceability/MX_QA_031_032_SDLC_2026-11-19.md) and [QA plan](docs/qa/MX_QA_031_032_DEVICE_QA_2026-11-19.md). No build, device validation, signing or release is claimed by this entry.
