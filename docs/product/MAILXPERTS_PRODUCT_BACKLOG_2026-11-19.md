@@ -13,7 +13,7 @@
 | ID | Type | Priority | User outcome | Implementation | QA / UAT | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
 | [MX-QA-031](https://github.com/T1Xperts/MailXperts-Android/issues/38) | Defect | P1, escalate P0 if broadly reproduced | Reply/Reply All must load composer for complex HTML threads without blank screen | Not fixed / root cause unconfirmed | User reproduction reported; Android logs not captured; retest pending | Capture sanitized logcat from physical device, fix, regression test |
-| [MX-QA-032](https://github.com/T1Xperts/MailXperts-Android/issues/39) | Feature | P1 | View on-device crash/error history, export safe reports and optionally sync issues to GitHub | **Partial code on [draft PR #40](https://github.com/T1Xperts/MailXperts-Android/pull/40)**: local logger, diagnostics UI, navigation breadcrumbs; server sync unbuilt | JUnit source/test code included; CI result and physical device UAT **not yet confirmed** | Review code/privacy; build, test, approve secure gateway+consent, then UAT |
+| [MX-QA-032](https://github.com/T1Xperts/MailXperts-Android/issues/39) | Feature | P1 | View on-device crash/error history, export safe reports and optionally sync issues to GitHub | **Partial code on [draft PR #40](https://github.com/T1Xperts/MailXperts-Android/pull/40)**: local logger, diagnostics UI, navigation breadcrumbs; server sync unbuilt | JUnit/source contract tests and Android/P0 CI **PASS (aggregate)**; physical-device UAT **not run** | Review code/privacy; build, test, approve secure gateway+consent, then UAT |
 
 ## MX-QA-032 deliverable slices
 
@@ -33,3 +33,9 @@ Backlog / triage → approved HLD → reviewed LLD → PR/code → automated QA 
 **Non-negotiable controls:** no full device logcat in production; never ship GitHub tokens/keys or LLM credentials in APK; no collection of mail bodies, subject, participants, patient details, OAuth tokens or attachments; opt-in remote reporting and permissioned private GitHub issues; human approval for fixes, email sends and operational changes.
 
 **Traceability:** [44-field RTM](../traceability/RTM.csv) · [Detailed SDLC/HLD/LLD](../traceability/MX_QA_031_032_SDLC_2026-11-19.md) · [QA case plan](../qa/MX_QA_031_032_DEVICE_QA_2026-11-19.md) · [Master QA #3](https://github.com/T1Xperts/MailXperts-Android/issues/3) · [Release #11](https://github.com/T1Xperts/MailXperts-Android/issues/11).
+
+## Verified CI evidence, 19 Nov 2026
+
+- [Android workflow #44484269468](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44484269468): **SUCCESS** — clean, lintDebug, testDebugUnitTest, assembleDebug; development APK artifact `MailXperts-v1.6.0-beta.7-debug-apk`.
+- [P0 QA workflow #44484269483](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44484269483): **SUCCESS** — P0 regression and debug/unsigned QA artifacts.
+- **Not evidence:** no device UAT, no signed production APK, no private GitHub gateway deploy, no bug #38 fix.
