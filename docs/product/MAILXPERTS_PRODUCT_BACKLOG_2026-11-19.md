@@ -12,7 +12,7 @@
 
 | ID | Type | Priority | User outcome | Implementation | QA / UAT | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| [MX-QA-031](https://github.com/T1Xperts/MailXperts-Android/issues/38) | Defect | P1, escalate P0 if broadly reproduced | Reply/Reply All must load composer for complex HTML threads without blank screen | Not fixed / root cause unconfirmed | User reproduction reported; Android logs not captured; retest pending | Capture sanitized logcat from physical device, fix, regression test |
+| [MX-QA-031](https://github.com/T1Xperts/MailXperts-Android/issues/38) | Defect | P1, escalate P0 if broadly reproduced | Reply/Reply All must load composer for complex HTML threads without blank screen | **Hotfix candidate in draft PR #40**, code complete (actual root cause not proven) | **Android/P0 CI PASS**; actual device UAT pending | Install debug test app, retest specific message, capture logs if failure; production signing pending |
 | [MX-QA-032](https://github.com/T1Xperts/MailXperts-Android/issues/39) | Feature | P1 | View on-device crash/error history, export safe reports and optionally sync issues to GitHub | **Partial code on [draft PR #40](https://github.com/T1Xperts/MailXperts-Android/pull/40)**: local logger, diagnostics UI, navigation breadcrumbs; server sync unbuilt | JUnit/source contract tests and Android/P0 CI **PASS (aggregate)**; physical-device UAT **not run** | Review code/privacy; build, test, approve secure gateway+consent, then UAT |
 
 ## MX-QA-032 deliverable slices
@@ -39,3 +39,11 @@ Backlog / triage → approved HLD → reviewed LLD → PR/code → automated QA 
 - [Android workflow #44484269468](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44484269468): **SUCCESS** — clean, lintDebug, testDebugUnitTest, assembleDebug; development APK artifact `MailXperts-v1.6.0-beta.7-debug-apk`.
 - [P0 QA workflow #44484269483](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44484269483): **SUCCESS** — P0 regression and debug/unsigned QA artifacts.
 - **Not evidence:** no device UAT, no signed production APK, no private GitHub gateway deploy, no bug #38 fix.
+
+## MX-QA-031 hotfix build and test evidence, 19 Nov 2026
+
+- [Android CI build #44487973125](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44487973125): **SUCCESS**, lintDebug, JUnit and assembleDebug; artifact `MailXperts-v1.6.0-beta.7-hotfix.1-debug-apk`.
+- [P0 QA workflow #44487973593](https://github.com/T1Xperts/MailXperts-Android/actions/runs/44487973593): **SUCCESS**.
+- Hotfix versionName `1.6.0-beta.7-hotfix.1`, versionCode **25**, debug package `au.com.t1xperts.mailxperts.dev` (a side-by-side test application, **not** in-place upgrade).
+- Candidate APK SHA-256 `8388d711b876db70c99261ec4906321a09aabf45db043a60ea4773d7bc92e525` confirmed against GitHub CI SHA256SUMS.
+- Original physical-device failure/stack trace is unverified; **P1 issue remains open pending Product Owner device UAT**. No production-signed APK, no approval or release claimed.
