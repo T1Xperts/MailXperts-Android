@@ -59,12 +59,19 @@ public class ComposeActivity extends ComponentActivity {
     private String sharedBodyHtml = "";
     private boolean editorReady;
     private boolean bodyPopulated;
+    private boolean quoteLoading;
     private EditorSupport.FontBridge fontBridge;
     private EditorSupport.ImageBridge imageBridge;
 
     @Override protected void onCreate(Bundle state) {
         ThemeManager.apply(this);
         super.onCreate(state);
+        DiagnosticLogger.breadcrumb(this, "COMPOSER_CREATED", "COMPOSER");
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!editorReady && !isFinishing() && !isDestroyed() && hasWindowFocus()) {
+                DiagnosticLogger.breadcrumb(this, "COMPOSER_LOAD_TIMEOUT", "COMPOSER");
+            }
+        }, 15000L);
         store = new SecureStore(this);
         local = new LocalStore(this);
         recipientHistory = new RecipientHistory(this);
@@ -133,6 +140,7 @@ public class ComposeActivity extends ComponentActivity {
                 editorReady = true;
                 configureEditor();
                 populate();
+                DiagnosticLogger.breadcrumb(ComposeActivity.this, "COMPOSER_READY", "COMPOSER");
             }
         });
         editor.loadDataWithBaseURL("https://mailxperts.local/",
@@ -249,18 +257,48 @@ public class ComposeActivity extends ComponentActivity {
         if (recipient != null && to.getText().length() == 0) to.setText(recipient);
         if (requestedCc != null && cc.getText().length() == 0) cc.setText(requestedCc);
         if (requestedSubject != null && subject.getText().length() == 0) subject.setText(requestedSubject);
-        if (editorReady && !bodyPopulated) {
-            bodyPopulated = true;
-            String initial = sharedBodyHtml.isEmpty()
-                    ? "<p><br></p>" : sharedBodyHtml + "<p><br></p>";
-            if (account.signatureEnabled && account.signatureHtml != null && !account.signatureHtml.trim().isEmpty()) {
-                initial += "<div data-mailxperts-signature=\"true\"><br>"
-                        + SignatureHtml.normaliseStored(account.signatureHtml) + "</div>";
+        if (editorReady && !bodyPopulated && !quoteLoading) {
+            final String initial = initialBodyHtml();
+            String token = getIntent().getStringExtra(ReplyPayloadStore.EXTRA_TOKEN);
+            if (token != null) {
+                quoteLoading = true;
+                executor.execute(() -> {
+                    String quoted = "";
+                    boolean failed = false;
+                    try { quoted = ReplyPayloadStore.load(this, token); }
+                    catch (Exception error) {
+                        failed = true;
+                        DiagnosticLogger.nonFatal(this, "QUOTE_READ_FAILED", "COMPOSER", error);
+                    }
+                    final String result = quoted;
+                    final boolean missing = failed;
+                    runOnUiThread(() -> {
+                        quoteLoading = false;
+                        if (isFinishing() || isDestroyed() || bodyPopulated) return;
+                        bodyPopulated = true;
+                        setEditorHtml(initial + result);
+                        if (missing) Toast.makeText(this,
+                                "Original message quote unavailable. You can still reply.",
+                                Toast.LENGTH_LONG).show();
+                    });
+                });
+            } else {
+                bodyPopulated = true;
+                String legacyHtml = getIntent().getStringExtra("initial_html");
+                setEditorHtml(initial + (legacyHtml == null ? "" : legacyHtml));
             }
-            String requestedHtml = getIntent().getStringExtra("initial_html");
-            if (requestedHtml != null && !requestedHtml.trim().isEmpty()) initial += requestedHtml;
-            setEditorHtml(initial);
         }
+    }
+
+    private String initialBodyHtml() {
+        String initial = sharedBodyHtml.isEmpty()
+                ? "<p><br></p>" : sharedBodyHtml + "<p><br></p>";
+        if (account.signatureEnabled && account.signatureHtml != null
+                && !account.signatureHtml.trim().isEmpty()) {
+            initial += "<div data-mailxperts-signature=\"true\"><br>"
+                    + SignatureHtml.normaliseStored(account.signatureHtml) + "</div>";
+        }
+        return initial;
     }
 
     private interface HtmlAction { void run(String html); }

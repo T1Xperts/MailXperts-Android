@@ -846,3 +846,16 @@ Opt-in privacy and local-first processing controls.
 - AI-generated replies may populate editable Compose but **never send automatically**.
 - UAT and formal testcase results require execution records with owner, environment, datetime, actual result, build SHA, evidence, pass/fail and linked defect IDs before closure.
 - Every new feature needs HLD sign-off, LLD review, unit/integration/security test, device/UAT record, and release gate evidence. Existing acceptance in issue #3 is not a substitute for per-case transcripts.
+
+
+## 19 Nov 2026: HLD-CORE-DIAGNOSTICS / LLD-MX-QA-031 / LLD-MX-QA-032
+
+**MX-QA-031 P1 regression:** Reply/Reply All opens blank screen on specific complex HTML thread. Reproduction recorded; root cause and fix unverified. Design/test: instrument action and composer lifecycle, collect actual sanitized device stack, then repair root cause. Device UAT not run.
+
+**MX-QA-032 P1 new feature:** privacy-first local crash/ANR, navigation breadcrumbs and manual export. Candidate Android design implemented only in [draft PR #40](https://github.com/T1Xperts/MailXperts-Android/pull/40). Server authenticated reporting / private GitHub App dedupe is proposed only.
+
+- **HLD:** [HLD-CORE-DIAGNOSTICS draft](MX_QA_031_032_SDLC_2026-11-19.md)
+- **LLD:** [LLD-MX-QA-032 candidate + gateway not implemented](MX_QA_031_032_SDLC_2026-11-19.md)
+- **QA cases:** [TC-MX-QA-031 / TC-MX-QA-032](../qa/MX_QA_031_032_DEVICE_QA_2026-11-19.md)
+- **Security:** never copy arbitrary exception messages/mail/headers/patient data; local no-backup storage; no READ_LOGS; no GitHub token or auto-upload in mobile app.
+- **Release state:** NOT RELEASED. Automated and physical-device UAT gates pending.

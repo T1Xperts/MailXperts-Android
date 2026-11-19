@@ -319,6 +319,8 @@ public class SettingsActivity extends Activity {
         });
         root.addView(forget);
         root.addView(Ui.secondaryButton(this, "Appearance", v -> startActivity(new Intent(this, AppearanceActivity.class))));
+        root.addView(Ui.secondaryButton(this, "Diagnostics & crash reports",
+                v -> startActivity(new Intent(this, DiagnosticsActivity.class))));
         Ui.setContentView(this, scroll);
     }
 

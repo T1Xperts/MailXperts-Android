@@ -9,6 +9,7 @@ public final class MailXpertsApplication extends Application {
     @Override public void onCreate() {
         super.onCreate();
         appContext = getApplicationContext();
+        DiagnosticLogger.install(appContext);
     }
 
     static Context context() {

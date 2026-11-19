@@ -25,3 +25,11 @@ These notes are an engineering handoff, not a completed legal declaration. The P
 - The retention/deletion process for any future server-side service.
 - Whether production Google/Microsoft OAuth introduces token handling or provider-specific data-use obligations.
 - The final encrypted-backup and device-transfer behavior.
+
+
+## Proposed MX-QA-032 app diagnostics (draft PR #40, not published)
+
+- App may keep **bounded, sanitized local event metadata** for uncaught Java exceptions, supported previous-process crash/ANR reasons and email-composer transitions.
+- No message content, recipient, subject, attachments, exception message or credentials are recorded intentionally. Export requires the user to choose a document destination.
+- No background telemetry upload is implemented in this draft. A later remote-reporting feature would require explicit opt-in, appropriate Play Data safety disclosure, retention/deletion notice, authenticated backend and private incident storage before release.
+- Verify against actual data-flow test results and privacy review; do not interpret these development notes as a completed Play Console declaration.

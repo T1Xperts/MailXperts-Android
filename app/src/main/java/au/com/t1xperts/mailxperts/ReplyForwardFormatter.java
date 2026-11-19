@@ -69,7 +69,10 @@ final class ReplyForwardFormatter {
         // Compose's editor has JavaScript enabled, so never inject untrusted
         // message HTML verbatim. Reuse the app's active-content sanitizer while
         // retaining safe nested quoted history, tables, links and formatting.
-        String safe = SignatureHtml.sanitise(html);
+        // Word/Outlook <style> blocks can leak global CSS into the editable composer.
+        // Preserve inline formatting and safe elements, but remove the stylesheet itself.
+        String withoutStyles = html.replaceAll("(?is)<\\s*style\\b[^>]*>.*?<\\s*/\\s*style\\s*>", "");
+        String safe = SignatureHtml.sanitise(withoutStyles);
         return blank(safe) ? "<p><em>(No message body)</em></p>" : safe;
     }
 
