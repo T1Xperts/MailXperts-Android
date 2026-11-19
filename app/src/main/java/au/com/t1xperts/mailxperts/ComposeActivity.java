@@ -300,7 +300,6 @@ public class ComposeActivity extends ComponentActivity {
         }
         return initial;
     }
-    }
 
     private interface HtmlAction { void run(String html); }
 
