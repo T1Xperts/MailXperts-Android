@@ -14,9 +14,9 @@ public class ReleaseIdentityContractTest {
         String gradle = readProjectFile("build.gradle", "app/build.gradle");
 
         assertTrue(gradle.contains("applicationId 'au.com.t1xperts.mailxperts'"));
-        assertTrue("Gmail XOAUTH2 hotfix must advance beyond beta.6 versionCode 20",
-                gradle.contains("versionCode 21"));
-        assertTrue(gradle.contains("versionName '1.6.0-beta.7'"));
+        assertTrue("Reply composer hotfix must upgrade beyond earlier beta.10 versionCode 24",
+                gradle.contains("versionCode 25"));
+        assertTrue(gradle.contains("versionName '1.6.0-beta.7-hotfix.1'"));
         assertTrue(gradle.contains("applicationIdSuffix '.dev'"));
     }
 
